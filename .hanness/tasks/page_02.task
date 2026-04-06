@@ -1,0 +1,12 @@
+{
+  "page_id": "page_02",
+  "page_num": "02",
+  "title": "Combination Engine",
+  "depends_on": [
+    "page_01_models"
+  ],
+  "created_at": "2026-04-06T20:20:32",
+  "status": "done",
+  "prompt": "당신은 CardForge Flutter 게임 프로젝트의 자율 구현 에이전트입니다.\n아래 Page 명세를 읽고 지시된 파일을 실제로 생성/수정하십시오.\n\n[프로젝트 루트]\nC:\\Users\\Administrator\\codingapp\\ai_coding_games\n\n[CLAUDE.md 핵심 제약]\n- Flutter + Riverpod + shared_preferences 전용\n- 조합 규칙은 combinations.dart 데이터 테이블에만 존재\n- 개별 위젯 타이머 금지 → 중앙 Tick 루프 사용\n- 저장은 shared_preferences만 사용\n\n[Page 명세]\n# PAGE 02 — Combination Engine\nstatus: pending\ndepends_on: [page_01_models]\n\n## 목표\n조합 레시피를 데이터 테이블 기반으로 중앙 관리.\nUI 코드와 완전히 분리된 순수 로직 레이어를 구성한다.\n\n## 구현 범위\n### 생성 파일\n- `lib/logic/combinations.dart`\n  - CombinationRule 클래스: inputA, inputB, output, consumeA, consumeB\n  - COMBINATION_TABLE: List<CombinationRule> (11개 이상)\n    돌+돌→벽돌, 벽돌+벽돌→성벽, 목재+돌→창, 목재+목재→배\n    식량+식량→씨앗, 씨앗+농지→과수원, 창+창→활, 활+전사→궁수\n    벽돌+나무→목조 가옥, 목조 가옥+목조 가옥→마을, 마을+마을→도시\n    벽돌+성벽→성벽(HP+3, 특수 처리)\n\n- `lib/logic/combination_engine.dart`\n  - CombinationEngine 클래스\n  - `CombinationResult? resolve(CardType a, CardType b)` 메서드\n  - 순서 무관 매칭 (a+b == b+a)\n  - 특수 케이스: 성벽 수리(HP+3) 분기 처리\n\n## 성공 기준\n- [ ] 11개 레시피 전부 양방향 매칭 통과\n- [ ] 존재하지 않는 조합 → null 반환 확인\n- [ ] 성벽 수리 특수 케이스 처리 확인\n- [ ] 단위 테스트 `test/combination_engine_test.dart` 작성 및 통과\n\n\n[지시]\n1. 위 명세의 \"구현 범위\"에 나열된 파일을 모두 생성 또는 수정하라.\n2. \"성공 기준\"의 각 항목이 통과되도록 구현하라.\n3. 구현 완료 후 `flutter analyze`를 실행해 오류가 없는지 확인하라.\n4. 작업 완료 시 각 생성 파일의 경로와 주요 변경 사항을 간략히 요약하라.\n5. 이전 page의 파일이 아직 없다면 stub/placeholder로 생성 후 진행하라.\n",
+  "updated_at": "2026-04-06T20:34:07"
+}

@@ -1,0 +1,37 @@
+# PAGE 07 — Win / Lose Screen
+status: pending
+depends_on: [page_03_game_loop, page_06_ui_panels]
+
+## 목표
+승리/패배 조건 감지 즉시 결과 화면으로 전환.
+생존 시간과 최고 기록을 표시한다.
+
+## 구현 범위
+### 생성 파일
+- `lib/screens/result_screen.dart`
+  - ResultScreen(status: GameStatus, survivalTime: double)
+  - 승리 화면:
+    - 제목: "🏰 왕국 건설 완료!"
+    - 달성 시간 표시 (mm:ss)
+    - 최고 기록 갱신 시 "신기록!" 강조
+    - 버튼: [다시 플레이] [메인으로]
+  - 패배 화면:
+    - 제목: "💀 왕국 멸망"
+    - 생존 시간 표시
+    - 패배 원인 메시지: "마지막 인구가 사라졌습니다"
+    - 버튼: [다시 플레이]
+
+- `lib/screens/main_menu_screen.dart`
+  - MainMenuScreen
+  - 타이틀 + 시작 버튼 + 최고 기록 표시
+
+### 게임 전환 처리
+- GameNotifier에서 GameStatus.won / GameStatus.lost 감지 시
+  Navigator.pushReplacement → ResultScreen 이동
+- [다시 플레이] → GameNotifier.reset() → GameScreen 재진입
+
+## 성공 기준
+- [ ] 승리 조건 충족 즉시 승리 화면 전환 확인
+- [ ] 패배 조건 충족 즉시 패배 화면 전환 확인
+- [ ] 최고 기록 shared_preferences 저장/표시 확인
+- [ ] [다시 플레이] 후 게임 상태 완전 초기화 확인

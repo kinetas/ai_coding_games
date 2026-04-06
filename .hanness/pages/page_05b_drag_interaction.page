@@ -1,0 +1,31 @@
+# PAGE 05b — Drag & Drop Interaction
+status: pending
+depends_on: [page_05a_board_base]
+
+## 목표
+game_board.dart의 DragTarget을 완성하고 interaction.dart를 구현한다.
+조합 가능 여부 판정, glow 피드백, executeInteraction 실행까지 연결한다.
+
+## 구현 범위
+### 수정 파일
+- `lib/widgets/game_board.dart`
+  - DragTarget 완성:
+    - onWillAcceptWithDetails: CombinationEngine.canCombine(dragger, target) 결과 반환
+    - onAccept: executeInteraction(dragger, target) 호출
+    - isDragTarget 상태를 CardWidget으로 전달 → glow 효과 활성화
+    - 조합 불가 카드 위에 드롭 시 아무 동작 없이 원위치
+
+### 생성 파일
+- `lib/logic/interaction.dart`
+  - executeInteraction(CardModel dragger, CardModel target, WidgetRef ref)
+  - 조합 성공: 두 카드 제거 → 결과 카드 두 카드의 중간 위치에 생성 → 이벤트 로그 기록
+  - 작업 배치: 사람/전사를 건물/자연 카드에 드롭 → isWorking = true 설정
+  - 번식: 사람+사람 드롭 → 새 사람 카드 생성 (식량 1개 소모, 식량 없으면 무시)
+  - 창+사람 → 전사 카드로 변환
+
+## 성공 기준
+- [ ] 조합 가능 카드 위에 드래그 시 glow 표시
+- [ ] 조합 불가 카드는 glow 없이 드롭 무시
+- [ ] 조합 성공 시 두 카드 제거 → 결과 카드 생성
+- [ ] 번식/작업 배치/전사 변환 동작 확인
+- [ ] flutter analyze 오류 없음

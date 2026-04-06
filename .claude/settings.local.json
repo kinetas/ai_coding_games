@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(where python:*)",
+      "Bash(where claude:*)",
+      "Read(//c/Users/Administrator/.local/bin//**)",
+      "Read(//c/Users/Administrator/AppData/Roaming/npm//**)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(/c/Users/Administrator/AppData/Local/Microsoft/WindowsApps/python3.exe:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(where py:*)",
+      "Bash(/c/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(where python3.exe)",
+      "Bash(where py.exe)",
+      "Read(//c/Users/Administrator/AppData/Local/Programs/Python//**)",
+      "Bash(ls \"/c/Python\"*)",
+      "Bash(py --version)",
+      "Bash(py:*)"
+    ]
+  }
+}

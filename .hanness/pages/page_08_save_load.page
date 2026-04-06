@@ -1,0 +1,50 @@
+# PAGE 08 — Save / Load System
+status: pending
+depends_on: [page_01_models, page_07_win_lose]
+
+## 목표
+앱 일시정지 시 자동 저장, 재실행 시 복구.
+CLAUDE.md 스키마 기준으로 JSON 직렬화/역직렬화.
+
+## 구현 범위
+### 생성 파일
+- `lib/logic/save_manager.dart`
+  - SaveManager
+  - `Future<void> save(GameState state)`:
+    - GameState → JSON 변환
+    - checksum(SHA-256 앞 8자리) 계산 후 포함
+    - shared_preferences 키 `cardforge_save`에 저장
+  - `Future<GameState?> load()`:
+    - JSON 로드 → checksum 검증 → 불일치 시 null 반환
+    - GameState 복구 반환
+  - `Future<void> saveBestRecord(double survivalTime)`:
+    - 기존 기록보다 길 때만 갱신
+    - 키: `cardforge_best`
+
+  - 저장 JSON 스키마:
+    ```json
+    {
+      "last_saved": "ISO8601",
+      "stats": { "gameTime": 0.0, "gameSpeed": 1 },
+      "active_cards": [
+        { "id": "uuid", "type": "CITY", "x": 0.5, "y": 0.3,
+          "removalTimeLeft": null, "workTimeLeft": 0, "hp": null }
+      ],
+      "best_records": { "survival_time": 0.0 },
+      "checksum": "abc12345"
+    }
+    ```
+
+### 자동 저장 트리거
+- `lib/main.dart`에 AppLifecycleListener 등록
+  - paused / detached 상태 → SaveManager.save() 호출
+- GameScreen 진입 시 SaveManager.load() 호출 → 복구
+
+### 상단 바 연동
+- TopBar에 [저장] / [불러오기] 버튼 추가 (수동 저장 지원)
+
+## 성공 기준
+- [ ] 앱 종료 후 재실행 시 카드 위치/타이머 복구 확인
+- [ ] checksum 불일치 시 저장 데이터 무시 확인
+- [ ] 최고 기록 갱신 로직 정상 동작 확인
+- [ ] 저장 데이터 없을 때 신규 게임 정상 시작 확인

@@ -1,0 +1,45 @@
+# PAGE 06 — UI Panels (TopBar, EventLog, HelpPanel)
+status: pending
+depends_on: [page_04_card_widget, page_05b_drag_interaction]
+
+## 목표
+상단 바, 이벤트 로그, 도움말 패널 구현.
+게임 보드와 분리된 UI 레이어로 구성한다.
+
+## 구현 범위
+### 생성 파일
+- `lib/widgets/top_bar.dart`
+  - TopBar
+  - 좌측: 앱 타이틀 "⚔ CardForge"
+  - 속도 버튼: 1x / 2x / 5x / 10x (선택된 버튼 강조)
+    → 탭 시 GameNotifier.setSpeed(n) 호출
+  - 카드 추가 버튼: 사람/식량/돌/목재/창/농지
+    → 탭 시 GameNotifier.addCard(type) 호출, 보드 중앙에 스폰
+  - 우측: 카드 수 표시 "카드: N"
+
+- `lib/widgets/event_log.dart`
+  - EventLog: 우하단 고정 패널 (width: 220, 최대 height: 300)
+  - GameState.eventLog 리스트를 역순 표시 (최신 상단)
+  - 최대 60개 항목, 초과 시 오래된 항목 제거
+  - 각 항목: [게임시간(mm:ss)] 메시지 형식
+  - 경고 항목(위협 관련): 빨간 텍스트
+
+- `lib/widgets/help_panel.dart`
+  - HelpPanel: 좌하단 고정 패널
+  - 조작법, 상호작용 규칙, 조합 레시피 요약 표시
+  - 접기/펼치기 토글 버튼 포함
+
+### 화면 레이아웃 조합
+- `lib/screens/game_screen.dart`
+  - Stack 구조:
+    - 배경색
+    - GameBoard (전체 영역)
+    - TopBar (상단 고정)
+    - EventLog (우하단 고정)
+    - HelpPanel (좌하단 고정)
+
+## 성공 기준
+- [ ] 속도 버튼 선택 상태 시각 반영 확인
+- [ ] 카드 추가 버튼으로 보드에 카드 생성 확인
+- [ ] 이벤트 로그 최신 항목 상단 표시 확인
+- [ ] 모바일/데스크탑 레이아웃 모두 패널 겹침 없음

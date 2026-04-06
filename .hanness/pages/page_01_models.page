@@ -1,0 +1,39 @@
+# PAGE 01 — Data Models & Project Setup
+status: pending
+depends_on: []
+
+## 목표
+Flutter 프로젝트 초기화 및 핵심 데이터 모델 정의.
+이후 모든 페이지의 토대가 되는 구조를 확립한다.
+
+## 구현 범위
+### 프로젝트 초기화
+- `flutter create cardforge` 실행
+- `pubspec.yaml` 의존성 추가:
+  - flutter_riverpod
+  - shared_preferences
+  - uuid
+
+### 생성 파일
+- `lib/models/card_type.dart`
+  - CardType enum: person, warrior, farmland, ruined_farmland, land, boat,
+    wall, rock, tree, rabbit, deer, wolf, bear, spear, bow, archer,
+    food, stone, wood, brick, seed, orchard, house, village, city
+  - CardCategory enum: human, building, nature, threat, resource, weapon
+  - CardDefinition 클래스: type, name, icon, category, removalTime, workTime, workerType
+
+- `lib/models/card_model.dart`
+  - CardModel: id(uuid), type, position(Offset), removalTimeLeft,
+    workTimeLeft, isWorking, storedWorkerId, hp, visible
+
+- `lib/models/game_state.dart`
+  - GameState: cards(List<CardModel>), gameTime, gameSpeed,
+    status(playing/won/lost), eventLog(List<String>)
+
+- `lib/models/card_definitions.dart`
+  - CARD_DEFS Map<CardType, CardDefinition> 전체 정의
+
+## 성공 기준
+- [ ] `flutter analyze` 오류 없음
+- [ ] CardModel.fromJson / toJson 직렬화 동작 확인
+- [ ] 모든 CardType enum 값이 CARD_DEFS에 정의됨

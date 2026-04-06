@@ -1,0 +1,26 @@
+=== page_04 — Card Widget ===
+실행 시각: 2026-04-06T20:42:02
+종료 코드: 0
+============================================================
+The implementation is complete. Flutter's `flutter analyze` couldn't be located in the current shell PATH, but the code is statically sound based on review. Here's a summary:
+
+---
+
+## 생성/수정 파일 요약
+
+### `lib/widgets/card_widget.dart` (수정)
+스텁에서 완전한 구현으로 교체:
+- `CardWidget(card: CardModel, isDragTarget: bool)` — 130×180 고정 크기
+- **상단 뱃지**: 카테고리명 한국어 (인류/건설/자연/위협/재화/무기)
+- **중앙 아이콘**: `CARD_DEFS`에서 가져온 이모지 (36px Text)
+- **카드명**: 볼드 흰 텍스트
+- **타이머 바**: `removalTimeLeft / removalTime` 비율 `LinearProgressIndicator` (흰색)
+- **작업 진행 바**: `isWorking == true`일 때만 표시 (주황색)
+- **HP 표시**: `CardType.wall` 전용 ❤️ 행
+- **glow 효과**: `isDragTarget == true` → 파란 2.5px 테두리 + `blurRadius: 16` 그림자
+- **카테고리별 배경색**: human=파랑, building=노랑, nature=초록, threat=빨강, resource=회색, weapon=보라
+
+### `lib/widgets/card_spawn_animation.dart` (신규)
+- `CardSpawnAnimation` StatefulWidget: ScaleTransition(0.4→1.0, elasticOut) + FadeTransition(0→1) 조합
+- 350ms `AnimationController`, 스폰 시 `forward()` 자동 실행
+- `CardSpawnAnimationState.remove()` 호출 시 역방향 재생 후 `onRemoved` 콜백 실행

@@ -1,0 +1,13 @@
+{
+  "page_id": "page_07",
+  "page_num": "07",
+  "title": "Win / Lose Screen",
+  "depends_on": [
+    "page_03_game_loop",
+    "page_06_ui_panels"
+  ],
+  "created_at": "2026-04-06T20:20:32",
+  "status": "done",
+  "prompt": "당신은 CardForge Flutter 게임 프로젝트의 자율 구현 에이전트입니다.\n아래 Page 명세를 읽고 지시된 파일을 실제로 생성/수정하십시오.\n\n[프로젝트 루트]\nC:\\Users\\Administrator\\codingapp\\ai_coding_games\n\n[CLAUDE.md 핵심 제약]\n- Flutter + Riverpod + shared_preferences 전용\n- 조합 규칙은 combinations.dart 데이터 테이블에만 존재\n- 개별 위젯 타이머 금지 → 중앙 Tick 루프 사용\n- 저장은 shared_preferences만 사용\n\n[Page 명세]\n# PAGE 07 — Win / Lose Screen\nstatus: pending\ndepends_on: [page_03_game_loop, page_06_ui_panels]\n\n## 목표\n승리/패배 조건 감지 즉시 결과 화면으로 전환.\n생존 시간과 최고 기록을 표시한다.\n\n## 구현 범위\n### 생성 파일\n- `lib/screens/result_screen.dart`\n  - ResultScreen(status: GameStatus, survivalTime: double)\n  - 승리 화면:\n    - 제목: \"🏰 왕국 건설 완료!\"\n    - 달성 시간 표시 (mm:ss)\n    - 최고 기록 갱신 시 \"신기록!\" 강조\n    - 버튼: [다시 플레이] [메인으로]\n  - 패배 화면:\n    - 제목: \"💀 왕국 멸망\"\n    - 생존 시간 표시\n    - 패배 원인 메시지: \"마지막 인구가 사라졌습니다\"\n    - 버튼: [다시 플레이]\n\n- `lib/screens/main_menu_screen.dart`\n  - MainMenuScreen\n  - 타이틀 + 시작 버튼 + 최고 기록 표시\n\n### 게임 전환 처리\n- GameNotifier에서 GameStatus.won / GameStatus.lost 감지 시\n  Navigator.pushReplacement → ResultScreen 이동\n- [다시 플레이] → GameNotifier.reset() → GameScreen 재진입\n\n## 성공 기준\n- [ ] 승리 조건 충족 즉시 승리 화면 전환 확인\n- [ ] 패배 조건 충족 즉시 패배 화면 전환 확인\n- [ ] 최고 기록 shared_preferences 저장/표시 확인\n- [ ] [다시 플레이] 후 게임 상태 완전 초기화 확인\n\n\n[지시]\n1. 위 명세의 \"구현 범위\"에 나열된 파일을 모두 생성 또는 수정하라.\n2. \"성공 기준\"의 각 항목이 통과되도록 구현하라.\n3. 구현 완료 후 `flutter analyze`를 실행해 오류가 없는지 확인하라.\n4. 작업 완료 시 각 생성 파일의 경로와 주요 변경 사항을 간략히 요약하라.\n5. 이전 page의 파일이 아직 없다면 stub/placeholder로 생성 후 진행하라.\n",
+  "updated_at": "2026-04-06T20:20:32"
+}
