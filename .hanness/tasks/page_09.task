@@ -1,0 +1,14 @@
+﻿Read the implementation spec at `.hanness/pages/page_09_combat_ai_polish.page` and implement everything described.
+
+Prerequisites: page_03, page_05, page_08 must be complete.
+
+Steps:
+1. Create `client/src/logic/CombatResolver.js` with RAIDER_TABLE, CATAPULT_TABLE, resolveRaider(), resolveCatapult(), resolveWarriorVsWolf().
+2. Create `client/src/logic/RaiderAI.js` with floating move AI, combat engagement (10s timer), and busy flag management.
+3. Create `client/src/logic/ArcherDefense.js` with auto-defense reactions per CLAUDE.md §5.7.
+4. Create `client/src/logic/ScoutManager.js` managing 30s scout lifecycle and SCOUT_REPORT forwarding.
+5. Wire RaiderAI.tick() and ArcherDefense.tick() into GameScene.update().
+6. Implement showCombineResult() feedback animation (fade-up text).
+7. Apply wall+archer simultaneous condition for modified damage calculation.
+
+After implementing, verify each acceptance criterion listed at the bottom of the spec.

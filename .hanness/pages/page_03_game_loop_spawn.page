@@ -1,0 +1,187 @@
+---
+page_id: page_03
+title: Game Loop & Natural Spawn System
+depends_on: [page_01, page_02]
+output_files: [client/src/scenes/GameScene.js, client/src/logic/SpawnManager.js]
+---
+
+# 구현 목표: 게임 루프 & 자연 스폰 시스템
+
+솔로 모드 기준 게임 루프와 자연 스폰(바위/나무/늑대/곰) 시스템을 구현한다.
+CLAUDE.md §7(자연 스폰), §5.6(약탈자 스폰), §5.2(게임 시작 조건) 기준.
+
+## 구현 파일
+- `client/src/scenes/GameScene.js` — Phaser3 씬 (update 루프 포함)
+- `client/src/logic/SpawnManager.js` — 스폰 타이밍 관리
+
+## SpawnManager
+
+```js
+// 스폰 설정 (CLAUDE.md §7.1)
+const SPAWN_CONFIG = {
+  ROCK: { weight: 10, minInterval: 40000, maxInterval: 80000, maxOnBoard: 3 },
+  TREE: { weight: 10, minInterval: 40000, maxInterval: 80000, maxOnBoard: 3 },
+  WOLF: { weight:  2, minInterval: 60000, maxInterval:120000, maxOnBoard: 4, maxCount: 3 },
+  BEAR: { weight:  1, minInterval:150000, maxInterval:300000, maxOnBoard: 1 },
+};
+
+export class SpawnManager {
+  constructor(onSpawn) {
+    this._onSpawn = onSpawn;  // (type, count) => void
+    this._timers  = {};       // type → nextSpawnAt (ms)
+    this._elapsed = 0;
+  }
+
+  start() {
+    // 각 카드 타입의 첫 스폰 시각을 랜덤 초기화
+    for (const [type, cfg] of Object.entries(SPAWN_CONFIG)) {
+      this._timers[type] = Date.now() + this._rand(cfg.minInterval, cfg.maxInterval);
+    }
+  }
+
+  update(dt, cards) {
+    this._elapsed += dt;
+    const now = Date.now();
+
+    for (const [type, cfg] of Object.entries(SPAWN_CONFIG)) {
+      if (now < this._timers[type]) continue;
+
+      // 보드 내 최대 수 초과 시 스킵
+      const onBoard = cards.filter(c => c.type === type).reduce((s,c)=>s+c.count,0);
+      if (onBoard >= cfg.maxOnBoard) {
+        this._timers[type] = now + this._rand(cfg.minInterval, cfg.maxInterval);
+        continue;
+      }
+
+      // 늑대: 1~3마리 랜덤 뭉치
+      let count = 1;
+      if (type === 'WOLF') count = Math.floor(Math.random() * 3) + 1;
+
+      this._onSpawn(type, count);
+      this._timers[type] = now + this._rand(cfg.minInterval, cfg.maxInterval);
+    }
+  }
+
+  _rand(min, max) { return min + Math.random() * (max - min); }
+}
+```
+
+## 약탈자 솔로 스폰 (CLAUDE.md §2.1)
+
+```js
+// GameScene 내부
+class RaiderSpawner {
+  constructor(onSpawn) {
+    this._onSpawn   = onSpawn;
+    this._interval  = 60000;   // 시작: 60초
+    this._minInt    = 20000;   // 최소: 20초
+    this._nextAt    = Date.now() + this._interval;
+    this._count     = 0;
+  }
+
+  update() {
+    if (Date.now() < this._nextAt) return;
+    this._onSpawn('RAIDER', 1);
+    this._count++;
+
+    // 30초씩 단축, 최소 20초
+    this._interval = Math.max(this._minInt, this._interval - 30000);
+    this._nextAt   = Date.now() + this._interval;
+  }
+}
+```
+
+## 위협 카드 타이머 (CLAUDE.md §7.3, §7.5)
+
+늑대·곰 스폰 시 `expiresAt = Date.now() + 20000` 설정.
+매 틱 만료 체크 → 습격 처리.
+
+```js
+// GameScene.update() 에서 호출
+function processThreatExpiry(cards, state) {
+  const now = Date.now();
+  for (const card of cards.filter(c => ['WOLF','BEAR'].includes(c.type))) {
+    if (!card.expiresAt || now < card.expiresAt) continue;
+
+    // 습격 처리 (CLAUDE.md §7.3 테이블)
+    const strength = card.type === 'BEAR' ? 3 : card.count;
+    applyRaid(state, strength);
+
+    // 카드 제거
+    cards.splice(cards.indexOf(card), 1);
+  }
+}
+
+function applyRaid(state, strength) {
+  const walls   = state.cards.filter(c => c.type === 'WALL');
+  const archers = state.cards.filter(c => c.type === 'ARCHER');
+  const hasWall = walls.reduce((s,c)=>s+c.count,0) > 0;
+  const hasArch = archers.reduce((s,c)=>s+c.count,0) > 0;
+
+  if (hasWall && hasArch) {
+    // 성벽 1장 제거 + 식량 드랍
+    deductStack(walls, 1);
+    spawnFood(state, strength);
+  } else if (hasArch) {
+    // 궁수:늑대 = 1:1 소모 + 식량 드랍
+    deductStack(archers, strength);
+    spawnFood(state, strength);
+  } else if (hasWall) {
+    // 사람 -strength
+    deductPeople(state, strength);
+  } else {
+    deductPeople(state, strength);
+  }
+}
+```
+
+## 패배 감지 (솔로, CLAUDE.md §5.5)
+
+```js
+function checkDefeat(state) {
+  const pop = state.cards
+    .filter(c => ['PERSON','WARRIOR','ARCHER'].includes(c.type))
+    .reduce((s,c) => s + c.count, 0);
+  if (pop <= 0) return true;
+  return false;
+}
+```
+
+## GameScene.js 뼈대
+
+```js
+export class GameScene extends Phaser.Scene {
+  constructor() { super({ key: 'GameScene' }); }
+
+  create(data) {
+    this.state       = data.state;   // 솔로/PvP GameState
+    this.spawnMgr    = new SpawnManager(this._onNaturalSpawn.bind(this));
+    this.raidSpawner = new RaiderSpawner(this._onRaiderSpawn.bind(this));
+    this.spawnMgr.start();
+    this._lastTime   = Date.now();
+  }
+
+  update() {
+    const now = Date.now();
+    const dt  = now - this._lastTime;
+    this._lastTime = now;
+
+    this.spawnMgr.update(dt, this.state.cards);
+    this.raidSpawner.update();
+    processThreatExpiry(this.state.cards, this.state);
+
+    if (this.state.mode === 'solo') {
+      this.state.survivalTime += dt / 1000;
+      if (checkDefeat(this.state)) this._onDefeat();
+    }
+  }
+}
+```
+
+## Acceptance Criteria
+- [ ] 솔로 모드 시작 후 60초 이내에 약탈자 1마리 스폰.
+- [ ] 약탈자 두 번째 스폰 간격이 30초로 줄어듦.
+- [ ] 바위/나무 보드 최대 3개 제한 동작 확인.
+- [ ] 늑대 스폰 시 `expiresAt` 필드가 약 20초 후로 설정.
+- [ ] 20초 후 늑대 자동 소멸 및 습격 로직 실행.
+- [ ] 인구 0 시 패배 이벤트 발생.

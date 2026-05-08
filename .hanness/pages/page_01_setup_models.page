@@ -1,0 +1,200 @@
+# Page 01: Project Setup & Card Data Models
+
+## Summary
+Phaser 3 + Node.js 프로젝트 골격을 구성하고, 게임 전체에서 사용하는 카드 타입, 스택 모델, GameState 스키마를 정의한다.
+
+## Context
+- 의존 페이지: 없음 (최초 페이지)
+- 기준 문서: `CLAUDE.md` §8(카드 조합 테이블), §10(GameState 스키마), §6.4(스택 데이터 모델)
+
+## Target Files
+```
+/web_game/
+  package.json                      ← 서버 deps (express, socket.io, uuid)
+  server/
+    index.js                        ← Node.js + Socket.io 서버 뼈대
+  client/
+    package.json                    ← Phaser3 deps
+    index.html                      ← 진입점 HTML
+    src/
+      main.js                       ← Phaser3 Game 인스턴스 생성
+      models/
+        CardDefs.js                 ← 카드 타입 상수 및 메타데이터
+        CardStack.js                ← CardStack 클래스 (count, position)
+        GameState.js                ← 솔로/PvP GameState 스키마
+```
+
+## Spec
+
+### 1. 프로젝트 구조
+- 루트에 `package.json` 생성 (서버용). scripts: `"start": "node server/index.js"`.
+- `client/package.json`에 `"phaser": "^3.60.0"` 의존성 추가.
+- Phaser 3는 CDN으로 로드 가능 (`client/index.html`에 script 태그).
+
+### 2. CardDefs.js — 카드 타입 정의
+CLAUDE.md §8 전체 카드 목록을 `CARD_TYPE` enum(객체)으로 정의한다.
+
+```js
+// 카드 타입 키 (string 상수)
+export const CARD_TYPE = {
+  PERSON:    'PERSON',
+  WARRIOR:   'WARRIOR',
+  ARCHER:    'ARCHER',
+  SCOUT:     'SCOUT',
+  ROCK:      'ROCK',
+  TREE:      'TREE',
+  WOLF:      'WOLF',
+  BEAR:      'BEAR',
+  FOOD:      'FOOD',
+  SEED:      'SEED',
+  STONE:     'STONE',
+  WOOD:      'WOOD',
+  SPEAR:     'SPEAR',
+  BOW:       'BOW',
+  BOAT:      'BOAT',
+  BRICK:     'BRICK',
+  WALL:      'WALL',
+  FARMLAND:  'FARMLAND',
+  ORCHARD:   'ORCHARD',
+  LOG_HOUSE: 'LOG_HOUSE',
+  VILLAGE:   'VILLAGE',
+  CITY:      'CITY',
+  RAIDER:    'RAIDER',
+  CATAPULT:  'CATAPULT',
+};
+
+// 카드 메타데이터
+export const CARD_META = {
+  [CARD_TYPE.PERSON]:    { label: '사람',    icon: '👤', category: 'human' },
+  [CARD_TYPE.WARRIOR]:   { label: '전사',    icon: '⚔️',  category: 'human' },
+  [CARD_TYPE.ARCHER]:    { label: '궁수',    icon: '🏹', category: 'human' },
+  [CARD_TYPE.SCOUT]:     { label: '척후병',  icon: '🔭', category: 'human' },
+  [CARD_TYPE.ROCK]:      { label: '바위',    icon: '⛰️',  category: 'nature' },
+  [CARD_TYPE.TREE]:      { label: '나무',    icon: '🌲', category: 'nature' },
+  [CARD_TYPE.WOLF]:      { label: '늑대',    icon: '🐺', category: 'threat' },
+  [CARD_TYPE.BEAR]:      { label: '곰',      icon: '🐻', category: 'threat' },
+  [CARD_TYPE.FOOD]:      { label: '식량',    icon: '🍖', category: 'resource' },
+  [CARD_TYPE.SEED]:      { label: '씨앗',    icon: '🌱', category: 'resource' },
+  [CARD_TYPE.STONE]:     { label: '돌',      icon: '🪨', category: 'resource' },
+  [CARD_TYPE.WOOD]:      { label: '목재',    icon: '🪵', category: 'resource' },
+  [CARD_TYPE.SPEAR]:     { label: '창',      icon: '🗡️',  category: 'weapon' },
+  [CARD_TYPE.BOW]:       { label: '활',      icon: '🏹', category: 'weapon' },
+  [CARD_TYPE.BOAT]:      { label: '배',      icon: '⛵', category: 'resource' },
+  [CARD_TYPE.BRICK]:     { label: '벽돌',    icon: '🧱', category: 'resource' },
+  [CARD_TYPE.WALL]:      { label: '성벽',    icon: '🏰', category: 'building' },
+  [CARD_TYPE.FARMLAND]:  { label: '농지',    icon: '🌾', category: 'building' },
+  [CARD_TYPE.ORCHARD]:   { label: '과수원',  icon: '🍎', category: 'building' },
+  [CARD_TYPE.LOG_HOUSE]: { label: '목조 가옥', icon: '🏠', category: 'building' },
+  [CARD_TYPE.VILLAGE]:   { label: '마을',    icon: '🏘️', category: 'building' },
+  [CARD_TYPE.CITY]:      { label: '도시',    icon: '🏙️',  category: 'building' },
+  [CARD_TYPE.RAIDER]:    { label: '약탈자',  icon: '🗡️',  category: 'enemy' },
+  [CARD_TYPE.CATAPULT]:  { label: '투석기',  icon: '⚙️',  category: 'enemy' },
+};
+```
+
+### 3. CardStack.js — 스택 데이터 모델
+CLAUDE.md §6.4 기준. count는 항상 1 이상.
+
+```js
+export class CardStack {
+  constructor(type, count = 1, ratioX = 0.5, ratioY = 0.5) {
+    this.id = generateUUID();  // 고유 식별자
+    this.type = type;
+    this.count = count;
+    this.ratioX = ratioX;      // 보드 내 비율 위치 (0~1)
+    this.ratioY = ratioY;
+    // 위협 카드 전용 필드
+    this.expiresAt = null;     // Date.now() + ms, 늑대/곰/약탈자용
+    this.busy = false;         // 전사가 교전 중인 경우 true
+    this.strength = 1;         // 곰은 3으로 설정
+    this.scoutExpiresAt = null; // 척후병 유지 시간
+  }
+
+  split(n) {
+    // n장 분리 → 새 스택 반환, 원본 count 차감
+    const actual = Math.min(n, this.count);
+    this.count -= actual;
+    return new CardStack(this.type, actual, this.ratioX + 0.05, this.ratioY + 0.05);
+  }
+
+  toJSON() {
+    return { id: this.id, type: this.type, count: this.count,
+             ratioX: this.ratioX, ratioY: this.ratioY };
+  }
+}
+```
+
+### 4. GameState.js — 상태 스키마
+CLAUDE.md §10.1, §10.2 기준.
+
+**솔로 상태:**
+```js
+export function createSoloState(nickname) {
+  return {
+    mode: 'solo',
+    nickname,
+    survivalTime: 0,       // 초 단위
+    combineCount: 0,
+    cards: [],             // CardStack[]
+    raidInterval: 60000,   // 다음 약탈자 스폰 간격(ms)
+    lastRaidAt: null,
+    bestScore: loadBestScore(),  // localStorage
+  };
+}
+```
+
+**PvP 상태 (서버):**
+```js
+export function createPvPRoomState(roomId) {
+  return {
+    roomId,
+    players: { p1: null, p2: null },
+    status: 'waiting',   // 'waiting' | 'countdown' | 'playing' | 'ended'
+    timer: 300,          // 5분 제한
+    lastSync: Date.now(),
+  };
+}
+```
+
+### 5. server/index.js 뼈대
+```js
+const express = require('express');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, { cors: { origin: '*' } });
+
+app.use(express.static('../client'));
+
+const rooms = new Map();  // roomCode → roomState
+
+io.on('connection', (socket) => {
+  console.log('connected:', socket.id);
+  // 이벤트 핸들러는 page_08에서 구현
+});
+
+httpServer.listen(3000, () => console.log('Server running on port 3000'));
+```
+
+### 6. client/main.js
+```js
+import Phaser from 'phaser';
+// 씬들은 각 페이지에서 구현 후 여기에 등록
+const config = {
+  type: Phaser.AUTO,
+  width: 1280,
+  height: 720,
+  backgroundColor: '#2d5a27',
+  scene: [],  // page_03~08에서 씬 추가
+};
+export const game = new Phaser.Game(config);
+```
+
+## Acceptance Criteria
+- [ ] `npm install` (서버) 및 `npm install` (클라이언트) 오류 없이 완료.
+- [ ] `CARD_TYPE` 상수가 23종 모두 포함.
+- [ ] `CardStack.split(n)` 호출 시 원본 count 정확히 차감, 반환 count = min(n, original).
+- [ ] `createSoloState()` 및 `createPvPRoomState()` 호출 시 구조 검증 통과.
+- [ ] `node server/index.js` 실행 시 포트 3000 리슨 확인.

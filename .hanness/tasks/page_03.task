@@ -1,0 +1,14 @@
+﻿Read the implementation spec at `.hanness/pages/page_03_game_loop_spawn.page` and implement everything described.
+
+Prerequisites: page_01, page_02 must be complete.
+
+Steps:
+1. Create `client/src/logic/SpawnManager.js` with SPAWN_CONFIG and SpawnManager class.
+2. Create `client/src/scenes/GameScene.js` with Phaser3 scene skeleton.
+3. Implement RaiderSpawner inside GameScene (60s → 30s → 20s intervals, solo only).
+4. Implement wolf/bear expiresAt timer and processThreatExpiry().
+5. Implement applyRaid() with the 4 board-state branches from CLAUDE.md §7.3.
+6. Implement checkDefeat() for solo mode (population = 0).
+7. Wire SpawnManager.update() and RaiderSpawner.update() into GameScene.update().
+
+After implementing, verify each acceptance criterion listed at the bottom of the spec.

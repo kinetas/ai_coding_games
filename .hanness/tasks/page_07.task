@@ -1,0 +1,13 @@
+﻿Read the implementation spec at `.hanness/pages/page_07_win_lose.page` and implement everything described.
+
+Prerequisites: page_03 (GameScene) and page_06 (HUD) must be complete.
+
+Steps:
+1. Create `client/src/logic/WinLoseChecker.js` with checkSolo(), checkPvP(), saveBestScore(), loadBestScore().
+2. Create `client/src/scenes/ResultScene.js` with solo and PvP result layouts.
+3. Wire _onDefeat() into GameScene.update() for solo mode.
+4. Wire _onGameOver() handler for PvP GAME_OVER socket event.
+5. Implement localStorage save on defeat with comparison to previous best.
+6. Add Restart and Back-to-Lobby buttons in ResultScene.
+
+After implementing, verify each acceptance criterion listed at the bottom of the spec.

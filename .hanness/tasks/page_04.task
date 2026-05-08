@@ -1,0 +1,13 @@
+﻿Read the implementation spec at `.hanness/pages/page_04_card_rendering.page` and implement everything described.
+
+Prerequisites: page_01 (CardDefs, CardStack) must be complete.
+
+Steps:
+1. Create `client/src/ui/StackBadge.js` — circle + text, hidden when count <= 1.
+2. Create `client/src/ui/CardSprite.js` — Phaser3 Container with background, icon, label, badge, timer text.
+3. Apply category-based background colors from the CAT_COLOR table in the spec.
+4. Implement refresh(timeNow) to update badge count and countdown timer.
+5. Implement setHighlight(on) and setDragging(on).
+6. Add sprite pool management helpers (addCardSprite, refreshSprites) to GameScene.
+
+After implementing, verify each acceptance criterion listed at the bottom of the spec.

@@ -1,0 +1,17 @@
+﻿Read the implementation spec at `.hanness/pages/page_01_setup_models.page` and implement everything described.
+
+Project root: `/web_game`
+Tech stack: Phaser 3 (client) + Node.js + Socket.io (server)
+Spec reference: `CLAUDE.md` in the project root.
+
+Steps:
+1. Create `package.json` at project root with express, socket.io, uuid dependencies.
+2. Create `server/index.js` with the skeleton shown in the spec.
+3. Create `client/package.json` with phaser dependency.
+4. Create `client/index.html` with Phaser3 CDN script.
+5. Create `client/src/main.js` with the Phaser Game config.
+6. Create `client/src/models/CardDefs.js` with CARD_TYPE enum (23 types) and CARD_META.
+7. Create `client/src/models/CardStack.js` with the CardStack class including split() method.
+8. Create `client/src/models/GameState.js` with createSoloState() and createPvPRoomState().
+
+After implementing, verify each acceptance criterion listed at the bottom of the spec.

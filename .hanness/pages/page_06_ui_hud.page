@@ -1,0 +1,239 @@
+﻿---
+page_id: page_06
+title: HUD Panels & Lobby UI
+depends_on: [page_03, page_04]
+output_files:
+  - client/src/ui/HUD.js
+  - client/src/scenes/LobbyScene.js
+  - client/src/scenes/RoomScene.js
+  - client/src/scenes/WaitingScene.js
+acceptance_criteria:
+  - 로비 화면에서 닉네임 입력 후 Solo Play / Multi Play 버튼 동작
+  - 내 Stat HUD에 식량/인구/제한/도시/성벽/농지/왕국점수 표시
+  - 솔로 모드 상단에 생존 시간 타이머 표시
+  - PvP 모드 상단에 상대방 Stat 구역 표시 (5초 갱신)
+  - 왕국 건설 버튼 30점 미만 grayed out, 30점 이상 활성화
+  - 방 만들기 / 방 참여하기 화면 동작
+---
+
+# 구현 목표: HUD Panels & Lobby UI
+
+CLAUDE.md §4.1~4.4(화면 구성), §5.5(왕국 건설 버튼), §9.2(왕국 점수) 기준.
+
+## LobbyScene.js
+
+```js
+// CLAUDE.md §4.1 로비 화면
+export class LobbyScene extends Phaser.Scene {
+  constructor() { super('LobbyScene'); }
+
+  create() {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+
+    this.add.text(cx, cy - 160, 'CardForge Online',
+      { fontSize: '40px', color: '#f5c842', fontStyle: 'bold' }).setOrigin(0.5);
+
+    // 닉네임 입력 (DOM 오버레이)
+    this._nickInput = this.add.dom(cx, cy - 60).createFromHTML(
+      '<input id="nick" type="text" placeholder="닉네임 입력" maxlength="12" style="font-size:20px;padding:8px;width:220px;text-align:center;">'
+    );
+
+    // 버튼들
+    this._makeBtn(cx - 110, cy + 20, 'Solo Play',   0x3a7d44, () => this._startSolo());
+    this._makeBtn(cx + 110, cy + 20, 'Multi Play',  0x2a5cb8, () => this._goMulti());
+    this._makeBtn(cx - 110, cy + 90, 'Setting',     0x666666, () => {});
+    this._makeBtn(cx + 110, cy + 90, 'Tutorial',    0x886600, () => {});
+  }
+
+  _makeBtn(x, y, label, color, cb) {
+    const bg  = this.add.rectangle(x, y, 180, 48, color, 1).setInteractive();
+    const txt = this.add.text(x, y, label, { fontSize: '18px', color: '#fff' }).setOrigin(0.5);
+    bg.on('pointerdown', cb);
+    bg.on('pointerover',  () => bg.setFillStyle(Phaser.Display.Color.GetColor(...[255,255,255].map(v=>v*.2+parseInt(color.toString(16).padStart(6,'0').slice(0,2),16)*.8))));
+    bg.on('pointerout',   () => bg.setFillStyle(color));
+  }
+
+  _startSolo() {
+    const nick = document.getElementById('nick')?.value.trim() || '플레이어';
+    this.scene.start('GameScene', { mode: 'solo', nickname: nick });
+  }
+
+  _goMulti() {
+    const nick = document.getElementById('nick')?.value.trim() || '플레이어';
+    this.scene.start('RoomScene', { nickname: nick });
+  }
+}
+```
+
+## RoomScene.js (CLAUDE.md §4.2)
+
+```js
+export class RoomScene extends Phaser.Scene {
+  constructor() { super('RoomScene'); }
+
+  create(data) {
+    this._nick = data.nickname;
+    const cx = this.scale.width / 2, cy = this.scale.height / 2;
+
+    this.add.text(cx, cy - 140, 'Multi Play',
+      { fontSize: '32px', color: '#f5c842' }).setOrigin(0.5);
+
+    this._makeBtn(cx, cy - 60, '방 만들기',   0x3a7d44, () => this._createRoom());
+    this._makeBtn(cx, cy + 10, '방 참여하기', 0x2a5cb8, () => this._joinRoom());
+
+    // 방 코드 입력란 (참여용)
+    this._codeInput = this.add.dom(cx, cy + 80).createFromHTML(
+      '<input id="roomcode" type="text" placeholder="방 코드 입력" maxlength="8" style="font-size:18px;padding:6px;width:180px;text-align:center;">'
+    );
+
+    this._makeBtn(cx, cy + 160, '← 뒤로가기', 0x444444, () => this.scene.start('LobbyScene'));
+  }
+
+  _createRoom() {
+    // Socket.io 연결 후 CREATE_ROOM 이벤트 (page_08에서 완성)
+    this.scene.start('WaitingScene', { nickname: this._nick, action: 'create' });
+  }
+
+  _joinRoom() {
+    const code = document.getElementById('roomcode')?.value.trim().toUpperCase();
+    if (!code) return;
+    this.scene.start('WaitingScene', { nickname: this._nick, action: 'join', code });
+  }
+
+  _makeBtn(x, y, label, color, cb) { /* LobbyScene._makeBtn 와 동일 구현 */ }
+}
+```
+
+## WaitingScene.js (CLAUDE.md §4.3)
+
+```js
+// 방 대기실 — 두 플레이어 Ready 상태 표시
+export class WaitingScene extends Phaser.Scene {
+  constructor() { super('WaitingScene'); }
+
+  create(data) {
+    const cx = this.scale.width / 2;
+    this._data  = data;
+    this._ready = { host: false, guest: false };
+
+    this._codeText = this.add.text(cx, 60, `방코드: ${data.code || '생성 중...'}`,
+      { fontSize: '24px', color: '#f5c842' }).setOrigin(0.5);
+
+    this._hostText  = this.add.text(cx, 160, '● 대기 중 (방장)', { fontSize: '18px', color: '#aaa' }).setOrigin(0.5);
+    this._guestText = this.add.text(cx, 210, '● 대기 중 (게스트)', { fontSize: '18px', color: '#aaa' }).setOrigin(0.5);
+
+    // 카운트다운 텍스트 (게임 시작 전 3초)
+    this._countText = this.add.text(cx, 320, '', { fontSize: '64px', color: '#ff0', fontStyle: 'bold' }).setOrigin(0.5);
+
+    // 방장 전용 게임 시작 버튼
+    if (data.role === 'host') {
+      this._startBtn = this.add.rectangle(cx, 400, 200, 50, 0x3a7d44).setInteractive();
+      this.add.text(cx, 400, '게임 시작', { fontSize: '20px', color: '#fff' }).setOrigin(0.5);
+      this._startBtn.on('pointerdown', () => this._requestStart());
+    }
+  }
+
+  // 소켓 이벤트로 상태 갱신 (page_08에서 연결)
+  updateReady(hostReady, guestReady) {
+    this._hostText.setColor(hostReady ? '#00ff88' : '#aaaaaa');
+    this._guestText.setColor(guestReady ? '#00ff88' : '#aaaaaa');
+    if (this._startBtn) {
+      this._startBtn.setFillStyle(hostReady && guestReady ? 0x3a7d44 : 0x888888);
+    }
+  }
+
+  startCountdown() {
+    let n = 3;
+    this._countText.setText(String(n));
+    this.time.addEvent({ delay: 1000, repeat: 2, callback: () => {
+      n--;
+      if (n > 0) this._countText.setText(String(n));
+      else this.scene.start('GameScene', { mode: 'pvp', ...this._data });
+    }});
+  }
+}
+```
+
+## HUD.js (CLAUDE.md §4.4)
+
+```js
+// 게임 화면 HUD — 내 Stat 구역 + 솔로/PvP 분기
+export class HUD {
+  constructor(scene, mode) {
+    this._scene = scene;
+    this._mode  = mode;
+    this._build();
+  }
+
+  _build() {
+    const W = this._scene.scale.width;
+    const H = this._scene.scale.height;
+
+    // ── 내 Stat 구역 (하단) ──
+    const statBg = this._scene.add.rectangle(W/2, H - 50, W, 80, 0x000000, 0.6);
+    this._statText = this._scene.add.text(20, H - 80, '', {
+      fontSize: '14px', color: '#ffffff', lineSpacing: 4
+    });
+
+    // ── 왕국 건설 버튼 (우하단) ──
+    this._kingdomBtn = this._scene.add.rectangle(W - 110, H - 50, 180, 44, 0x888888)
+      .setInteractive(false);
+    this._kingdomBtnTxt = this._scene.add.text(W - 110, H - 50, '👑 왕국 건설',
+      { fontSize: '16px', color: '#aaaaaa' }).setOrigin(0.5);
+    this._kingdomBtn.on('pointerdown', () => this._scene.events.emit('kingdom:build'));
+
+    // ── 솔로: 생존 타이머 (상단) ──
+    if (this._mode === 'solo') {
+      this._survivalText = this._scene.add.text(W/2, 30, '⏱ 0:00',
+        { fontSize: '22px', color: '#f5c842', fontStyle: 'bold' }).setOrigin(0.5);
+    }
+
+    // ── PvP: 상대방 Stat 구역 (상단) ──
+    if (this._mode === 'pvp') {
+      this._scene.add.rectangle(W/2, 40, W, 60, 0x000000, 0.6);
+      this._opponentText = this._scene.add.text(W/2, 40, '상대방 정보 동기화 중...',
+        { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
+    }
+  }
+
+  // 매 틱 호출 (GameScene.update 에서)
+  refresh(state, engine) {
+    const cards    = state.cards;
+    const pop      = cards.filter(c=>['PERSON','WARRIOR','ARCHER'].includes(c.type)).reduce((s,c)=>s+c.count,0);
+    const popLimit = engine._calcPopLimit(cards);
+    const food     = cards.filter(c=>c.type==='FOOD').reduce((s,c)=>s+c.count,0);
+    const walls    = cards.filter(c=>c.type==='WALL').reduce((s,c)=>s+c.count,0);
+    const cities   = cards.filter(c=>c.type==='CITY').reduce((s,c)=>s+c.count,0);
+    const farms    = cards.filter(c=>c.type==='FARMLAND').reduce((s,c)=>s+c.count,0);
+    const farmLim  = engine._calcFarmLimit(cards);
+    const kScore   = engine.calcKingdomScore(cards);
+
+    // 내 Stat 텍스트 갱신
+    this._statText.setText(
+      `식량: ${food}  인구: ${pop}/${popLimit}  도시: ${cities}  성벽: ${walls}장  농지: ${farms}/${farmLim}  👑 ${kScore}/30`
+    );
+
+    // 왕국 건설 버튼 활성화 (CLAUDE.md §5.5)
+    const canBuild = kScore >= 30;
+    this._kingdomBtn.setFillStyle(canBuild ? 0xd4a017 : 0x888888);
+    this._kingdomBtn.setInteractive(canBuild);
+    this._kingdomBtnTxt.setColor(canBuild ? '#ffe066' : '#aaaaaa');
+
+    // 솔로 생존 타이머
+    if (this._mode === 'solo' && this._survivalText) {
+      const t = state.survivalTime;
+      const m = Math.floor(t / 60), s = Math.floor(t % 60);
+      this._survivalText.setText(`⏱ ${m}:${String(s).padStart(2,'0')}`);
+    }
+  }
+
+  // PvP 상대방 정보 갱신 (소켓 SYNC_STATUS 수신 시, CLAUDE.md §10.4)
+  updateOpponent(opData) {
+    if (!this._opponentText) return;
+    this._opponentText.setText(
+      `인구: ${opData.pop} | 성벽: ${opData.hasWall?'있음':'없음'} | 도시: ${opData.cities} | 👑${opData.kingdomScore}`
+    );
+  }
+}
+```

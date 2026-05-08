@@ -1,0 +1,175 @@
+---
+page_id: page_02
+title: Combination Engine
+depends_on: [page_01]
+output_files: [client/src/logic/CombinationEngine.js]
+---
+
+# 구현 목표: CombinationEngine
+
+CLAUDE.md §8(카드 조합 테이블), §12(AI 가이드라인) 기준으로
+모든 조합 레시피를 데이터 테이블로 관리하는 엔진을 구현한다.
+레시피 추가 시 UI 코드를 수정하지 않는 구조가 핵심이다.
+
+## 구현 파일
+`client/src/logic/CombinationEngine.js`
+
+## 레시피 테이블 정의
+
+```js
+// 비소모 플래그: consumeA/consumeB = false → 해당 재료 카드 유지
+// 다중 결과: result는 배열 [{ type, count }]
+
+const RECIPES = [
+  // ── 자연 자원 채집 ──
+  { a: 'ROCK',     b: 'PERSON',  consumeA: true,  consumeB: false,
+    result: [{ type: 'STONE', count: 2 }] },
+  { a: 'TREE',     b: 'PERSON',  consumeA: true,  consumeB: false,
+    result: [{ type: 'WOOD',  count: 2 }] },
+  { a: 'FARMLAND', b: 'PERSON',  consumeA: false, consumeB: false,
+    result: [{ type: 'FOOD',  count: 1 }],
+    farmlandProduce: true },  // 농지 mode → 'producing'
+
+  // ── 자연 위협 처치 ──
+  { a: 'WOLF',   b: 'WARRIOR', consumeA: true, consumeB: 'prob',
+    result: [{ type: 'FOOD', count: 1 }], combatType: 'wolf' },
+  { a: 'BEAR',   b: 'WARRIOR', consumeA: true, consumeB: 'prob',
+    result: [{ type: 'FOOD', count: 1 }], combatType: 'bear' },
+
+  // ── 자원 생산 ──
+  { a: 'STONE', b: 'STONE', consumeA: true, consumeB: true,
+    result: [{ type: 'BRICK', count: 1 }] },
+  { a: 'FOOD',  b: 'FOOD',  consumeA: true, consumeB: true,
+    result: [{ type: 'SEED',  count: 1 }] },
+  { a: 'SEED',  b: 'FARMLAND', consumeA: true, consumeB: true,
+    result: [{ type: 'ORCHARD', count: 1 }] },
+
+  // ── 병기 제작 ──
+  { a: 'WOOD',  b: 'STONE', consumeA: true, consumeB: true,
+    result: [{ type: 'SPEAR', count: 1 }] },
+  { a: 'SPEAR', b: 'WOOD',  consumeA: true, consumeB: true,
+    result: [{ type: 'BOW',   count: 1 }] },
+  { a: 'WOOD',  b: 'WOOD',  consumeA: true, consumeB: true,
+    result: [{ type: 'BOAT',  count: 1 }] },
+
+  // ── 인구 생성 ──
+  { a: 'PERSON',  b: 'FOOD',    consumeA: true, consumeB: true,
+    result: [{ type: 'PERSON', count: 2 }], populationCheck: true },
+  { a: 'PERSON',  b: 'SPEAR',   consumeA: true, consumeB: true,
+    result: [{ type: 'WARRIOR', count: 1 }], populationCheck: false },
+  { a: 'BOW',     b: 'PERSON',  consumeA: true, consumeB: true,
+    result: [{ type: 'ARCHER',  count: 1 }], populationCheck: false },
+  { a: 'WOOD',    b: 'PERSON',  consumeA: true, consumeB: true,
+    result: [{ type: 'SCOUT',   count: 1 }], populationCheck: false },
+
+  // ── 건설 ──
+  { a: 'BRICK', b: 'BRICK',    consumeA: true, consumeB: true,
+    result: [{ type: 'WALL',     count: 1 }] },
+  { a: 'BRICK', b: 'TREE',     consumeA: true, consumeB: true,
+    result: [{ type: 'LOG_HOUSE', count: 1 }] },
+  { a: 'LOG_HOUSE', b: 'LOG_HOUSE', consumeA: true, consumeB: true,
+    result: [{ type: 'VILLAGE', count: 1 }] },
+  { a: 'VILLAGE',   b: 'VILLAGE',   consumeA: true, consumeB: true,
+    result: [{ type: 'CITY',    count: 1 }] },
+
+  // ── 공격 유닛 파견 (PvP 전용) ──
+  { a: 'WARRIOR', b: 'BOAT', consumeA: true, consumeB: true,
+    result: [], dispatchType: 'RAIDER',   pvpOnly: true },
+  { a: 'ARCHER',  b: 'BOAT', consumeA: true, consumeB: true,
+    result: [], dispatchType: 'CATAPULT', pvpOnly: true },
+  { a: 'SCOUT',   b: 'BOAT', consumeA: true, consumeB: true,
+    result: [], dispatchType: 'SCOUT',    pvpOnly: true },
+];
+```
+
+## CombinationEngine 클래스
+
+```js
+export class CombinationEngine {
+  constructor(getState) {
+    this._getState = getState;  // () => GameState 콜백
+  }
+
+  // 두 스택이 조합 가능한지 판별 (레시피 탐색)
+  findRecipe(typeA, typeB) {
+    return RECIPES.find(r =>
+      (r.a === typeA && r.b === typeB) ||
+      (r.a === typeB && r.b === typeA)
+    ) || null;
+  }
+
+  // 조합 실행. 성공 시 { results, consumed } 반환, 실패 시 { error } 반환
+  combine(stackA, stackB, mode = 'solo') {
+    const recipe = this.findRecipe(stackA.type, stackB.type);
+    if (!recipe) return { error: '조합 레시피 없음' };
+
+    // PvP 전용 레시피를 솔로에서 시도
+    if (recipe.pvpOnly && mode === 'solo')
+      return { error: 'PvP 전용 조합입니다' };
+
+    // 인구 제한 검사
+    if (recipe.populationCheck) {
+      const state = this._getState();
+      const popNow  = this._countPop(state.cards);
+      const popLimit = this._calcPopLimit(state.cards);
+      const willAdd = recipe.result.reduce((s, r) =>
+        s + (this._isPopCard(r.type) ? r.count : 0), 0);
+      // 사람+식량 조합은 결과가 2장이지만 순증가는 1명(재료 2장 소모)
+      const netGain = willAdd - (recipe.consumeA ? 1 : 0) - (recipe.consumeB ? 1 : 0);
+      if (popNow + netGain > popLimit)
+        return { error: `인구 제한 초과 (${popNow}/${popLimit})` };
+    }
+
+    // 농지 제한 검사
+    if (recipe.result.some(r => r.type === 'FARMLAND')) {
+      const state = this._getState();
+      const farmNow  = state.cards.filter(c => c.type === 'FARMLAND').reduce((s,c)=>s+c.count,0);
+      const farmLimit = this._calcFarmLimit(state.cards);
+      if (farmNow >= farmLimit)
+        return { error: `농지 제한 초과 (${farmNow}/${farmLimit})` };
+    }
+
+    return { recipe, ok: true };
+  }
+
+  // 인구 수 계산
+  _countPop(cards) {
+    return cards
+      .filter(c => ['PERSON','WARRIOR','ARCHER'].includes(c.type))
+      .reduce((s, c) => s + c.count, 0);
+  }
+
+  // 인구 제한 계산: 5 + 목조가옥×1 + 마을×3 + 도시×6
+  _calcPopLimit(cards) {
+    const sum = (type, mult) =>
+      cards.filter(c=>c.type===type).reduce((s,c)=>s+c.count,0) * mult;
+    return 5 + sum('LOG_HOUSE',1) + sum('VILLAGE',3) + sum('CITY',6);
+  }
+
+  // 농지 제한 계산: 1 + 마을×1 + 도시×2
+  _calcFarmLimit(cards) {
+    const sum = (type, mult) =>
+      cards.filter(c=>c.type===type).reduce((s,c)=>s+c.count,0) * mult;
+    return 1 + sum('VILLAGE',1) + sum('CITY',2);
+  }
+
+  // 왕국 점수 계산 (매 틱 재계산)
+  calcKingdomScore(cards) {
+    const city  = cards.filter(c=>c.type==='CITY').reduce((s,c)=>s+c.count,0);
+    const wall  = cards.filter(c=>c.type==='WALL').reduce((s,c)=>s+c.count,0);
+    const pop   = this._countPop(cards);
+    return city + Math.floor(wall/10) + Math.floor(pop/5);
+  }
+
+  _isPopCard(type) {
+    return ['PERSON','WARRIOR','ARCHER'].includes(type);
+  }
+}
+```
+
+## Acceptance Criteria
+- [ ] `findRecipe('STONE','STONE')` → `BRICK` 레시피 반환
+- [ ] `findRecipe('WARRIOR','PERSON')` → null (레시피 없음)
+- [ ] 인구 제한 도달 시 `PERSON+FOOD` 조합 → `{ error: '인구 제한 초과' }` 반환
+- [ ] `calcKingdomScore` : 도시2 + 성벽15장 + 인구10명 = 2 + 1 + 2 = 5점
+- [ ] PvP 전용 레시피를 솔로 모드에서 시도 → 에러 반환

@@ -1,0 +1,6 @@
+﻿=== page_08 result ===
+Title: Network Layer & PvP
+Status: IMPLEMENTED
+Files: server/index.js, SocketClient.js
+=== stderr ===
+

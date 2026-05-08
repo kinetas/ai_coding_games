@@ -1,0 +1,128 @@
+﻿---
+page_id: page_04
+title: Card Rendering & Stack UI
+depends_on: [page_01]
+output_files: [client/src/ui/CardSprite.js, client/src/ui/StackBadge.js]
+acceptance_criteria:
+  - 카드 타입별 아이콘과 라벨 렌더링 확인
+  - 수량 2 이상 스택에 뱃지(숫자) 표시, 1이면 뱃지 없음
+  - 늑대/곰 카드에 20초 카운트다운 타이머 텍스트 표시
+  - 호버 시 하이라이트, 드래그 시 반투명 효과 동작
+---
+
+# 구현 목표: Card Rendering & Stack UI
+
+CLAUDE.md §6.1(스택 기본 규칙) 기준. Phaser3 CardSprite + StackBadge 구현.
+
+## CardSprite.js
+
+```js
+import { CARD_META } from '../models/CardDefs.js';
+
+export const CARD_W = 90, CARD_H = 120;
+
+// 카테고리별 배경색
+const CAT_COLOR = {
+  human: 0xdff0ff, nature: 0xeeffdd, threat: 0xffdddd,
+  resource: 0xfff9f0, weapon: 0xf0e8ff, building: 0xfff5cc, enemy: 0xffcccc,
+};
+
+export class CardSprite extends Phaser.GameObjects.Container {
+  constructor(scene, stack) {
+    super(scene, 0, 0);
+    this.stack = stack;
+    this._build();
+    scene.add.existing(this);
+  }
+
+  _build() {
+    const meta  = CARD_META[this.stack.type] || { label: '?', icon: '❓', category: 'resource' };
+    const bgCol = CAT_COLOR[meta.category] || 0xfff9f0;
+
+    this._bg = this.scene.add.rectangle(0, 0, CARD_W, CARD_H, bgCol)
+      .setStrokeStyle(2, 0x8b6914);
+    this.add(this._bg);
+
+    // 아이콘
+    this.add(this.scene.add.text(0, -20, meta.icon, { fontSize: '32px' }).setOrigin(0.5));
+    // 라벨
+    this.add(this.scene.add.text(0, 22, meta.label,
+      { fontSize: '13px', color: '#3a2200', fontStyle: 'bold' }).setOrigin(0.5));
+
+    // 수량 뱃지 (포커 더미 스타일, CLAUDE.md §6.1)
+    this._badge = new StackBadge(this.scene, CARD_W/2 - 14, -CARD_H/2 + 14);
+    this.add(this._badge);
+
+    // 위협 카운트다운 타이머
+    this._timer = this.scene.add.text(0, CARD_H/2 - 14, '',
+      { fontSize: '11px', color: '#cc2200', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add(this._timer);
+
+    this.setSize(CARD_W, CARD_H).setInteractive();
+  }
+
+  refresh(timeNow) {
+    this._badge.setCount(this.stack.count);
+    if (this.stack.expiresAt) {
+      const sec = Math.max(0, Math.ceil((this.stack.expiresAt - timeNow) / 1000));
+      this._timer.setText(`⏱${sec}s`).setColor(sec <= 5 ? '#ff0000' : '#cc2200');
+    } else {
+      this._timer.setText('');
+    }
+  }
+
+  setHighlight(on) { this._bg.setStrokeStyle(on ? 3 : 2, on ? 0xffe066 : 0x8b6914); }
+  setDragging(on)  { this.setAlpha(on ? 0.7 : 1.0); }
+}
+```
+
+## StackBadge.js
+
+```js
+// 수량 1이면 뱃지 숨김 (CLAUDE.md §6.1)
+export class StackBadge extends Phaser.GameObjects.Container {
+  constructor(scene, x, y) {
+    super(scene, x, y);
+    this._circle = scene.add.circle(0, 0, 12, 0xcc3300);
+    this._text   = scene.add.text(0, 0, '', { fontSize: '11px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add([this._circle, this._text]);
+    scene.add.existing(this);
+    this.setVisible(false);
+  }
+
+  setCount(n) {
+    if (n <= 1) { this.setVisible(false); return; }
+    this._text.setText(String(n));
+    this.setVisible(true);
+  }
+}
+```
+
+## 씬 스프라이트 풀 관리
+
+```js
+// GameScene 내부
+_spriteMap = new Map();  // stackId → CardSprite
+
+addCardSprite(stack) {
+  const sp = new CardSprite(this, stack);
+  sp.setPosition(stack.ratioX * this.scale.width, stack.ratioY * this.scale.height);
+  this._spriteMap.set(stack.id, sp);
+}
+
+refreshSprites() {
+  const now = Date.now();
+  for (const stack of this.state.cards) {
+    let sp = this._spriteMap.get(stack.id);
+    if (!sp) { this.addCardSprite(stack); continue; }
+    sp.setPosition(stack.ratioX * this.scale.width, stack.ratioY * this.scale.height);
+    sp.refresh(now);
+  }
+  for (const [id, sp] of this._spriteMap) {
+    if (!this.state.cards.find(s => s.id === id)) {
+      sp.destroy();
+      this._spriteMap.delete(id);
+    }
+  }
+}
+```

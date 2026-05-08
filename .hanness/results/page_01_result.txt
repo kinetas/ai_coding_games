@@ -1,0 +1,6 @@
+﻿=== page_01 result ===
+Title: Project Setup & Card Data Models
+Status: IMPLEMENTED
+Files: package.json, CardDefs.js, CardStack.js, GameState.js
+=== stderr ===
+

@@ -1,0 +1,12 @@
+﻿Read the implementation spec at `.hanness/pages/page_02_combination_engine.page` and implement everything described.
+
+Prerequisites: page_01 must be complete (CardDefs.js and CardStack.js exist).
+
+Steps:
+1. Create `client/src/logic/CombinationEngine.js`.
+2. Define the RECIPES array with all recipes from the spec (natural gather, threat combat, resource, weapon, population, construction, PvP dispatch).
+3. Implement CombinationEngine class with findRecipe(), combine(), calcKingdomScore(), _calcPopLimit(), _calcFarmLimit() methods.
+4. Ensure bidirectional recipe matching (A+B and B+A both work).
+5. Ensure populationCheck and farmlandCheck logic is correct per CLAUDE.md §5.3, §5.4.
+
+After implementing, verify each acceptance criterion listed at the bottom of the spec.
