@@ -199,6 +199,13 @@ export class CardSprite extends Phaser.GameObjects.Container {
     this._bg.setStrokeStyle(on ? 3 : 2, on ? 0xd4af37 : borCol);
   }
 
+  // 3초 홀드 후 병합 준비 상태 표시 (파란 테두리)
+  setMergeHighlight(on) {
+    const meta   = CARD_META[this.stack.type];
+    const borCol = CAT_BORDER[meta?.category] || 0x8b6814;
+    this._bg.setStrokeStyle(on ? 3 : 2, on ? 0x40a8ff : borCol);
+  }
+
   setDragging(on) {
     this.setDepth(on ? 100 : 0);
     this.setScale(on ? 1.08 : 1.0);
