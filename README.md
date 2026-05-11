@@ -1,7 +1,7 @@
 # CardForge Online
 
 중세 카드 전략 서바이벌 — 솔로 or 1:1 PvP.  
-**Phaser 3** (클라이언트) + **Node.js & Socket.io** (서버) 기반으로 재구축 중.
+**Phaser 3** (클라이언트) + **Node.js & Socket.io** (서버) 기반으로 재구축 중..
 
 ---
 
