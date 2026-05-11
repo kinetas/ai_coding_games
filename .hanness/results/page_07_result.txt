@@ -1,6 +1,0 @@
-﻿=== page_07 result ===
-Title: Win/Lose Detection & Result Screen
-Status: IMPLEMENTED
-Files: WinLoseChecker.js, ResultScene.js
-=== stderr ===
-

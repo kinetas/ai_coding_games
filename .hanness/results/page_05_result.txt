@@ -1,6 +1,0 @@
-﻿=== page_05 result ===
-Title: Drag & Stack Interaction
-Status: IMPLEMENTED
-Files: DragManager.js
-=== stderr ===
-

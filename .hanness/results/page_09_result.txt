@@ -1,6 +1,0 @@
-﻿=== page_09 result ===
-Title: Combat AI & UX Polish
-Status: IMPLEMENTED
-Files: CombatResolver.js, RaiderAI.js, ArcherDefense.js, ScoutManager.js, GameScene.js
-=== stderr ===
-

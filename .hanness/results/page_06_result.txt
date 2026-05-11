@@ -1,6 +1,0 @@
-﻿=== page_06 result ===
-Title: HUD Panels & Lobby UI
-Status: IMPLEMENTED
-Files: HUD.js, LobbyScene.js, RoomScene.js, WaitingScene.js
-=== stderr ===
-
