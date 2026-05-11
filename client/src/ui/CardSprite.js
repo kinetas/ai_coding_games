@@ -47,20 +47,50 @@ export class CardSprite extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
     this.add(this._busyTxt);
 
+    this._craftBar = this.scene.add.graphics();
+    this.add(this._craftBar);
+
+    this._craftLabel = this.scene.add.text(0, CARD_H / 2 - 22, '',
+      { fontSize: '11px', color: '#3366ff', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add(this._craftLabel);
+
     this.setSize(CARD_W, CARD_H).setInteractive();
   }
 
   refresh(timeNow) {
     this._badge.setCount(this.stack.count);
 
-    if (this.stack.expiresAt) {
-      const sec = Math.max(0, Math.ceil((this.stack.expiresAt - timeNow) / 1000));
-      this._timer.setText(`⏱${sec}s`).setColor(sec <= 5 ? '#ff0000' : '#cc2200');
-    } else if (this.stack.combatTimer > 0 && this.stack.engagedWith) {
-      const sec = Math.max(0, Math.ceil(this.stack.combatTimer / 1000));
-      this._timer.setText(`⚔️${sec}s`).setColor('#ff6600');
-    } else {
+    if (this.stack.crafting && this.stack.craftEndAt && this.stack.craftStartAt) {
+      const total    = this.stack.craftEndAt - this.stack.craftStartAt;
+      const elapsed  = timeNow - this.stack.craftStartAt;
+      const progress = Math.min(1, elapsed / total);
+
+      const bw = CARD_W - 10, bh = 6;
+      const bx = -bw / 2, by = CARD_H / 2 - 18;
+      this._craftBar.clear();
+      this._craftBar.fillStyle(0x222222, 0.6);
+      this._craftBar.fillRect(bx, by, bw, bh);
+      this._craftBar.fillStyle(0x4488ff, 1);
+      this._craftBar.fillRect(bx, by, bw * progress, bh);
+
+      const sec = Math.max(0, Math.ceil((this.stack.craftEndAt - timeNow) / 1000));
+      this._craftLabel.setText(`⚒ ${sec}s`).setVisible(true);
       this._timer.setText('');
+      this.setAlpha(0.75);
+    } else {
+      this._craftBar.clear();
+      this._craftLabel.setVisible(false);
+      this.setAlpha(1.0);
+
+      if (this.stack.expiresAt) {
+        const sec = Math.max(0, Math.ceil((this.stack.expiresAt - timeNow) / 1000));
+        this._timer.setText(`⏱${sec}s`).setColor(sec <= 5 ? '#ff0000' : '#cc2200');
+      } else if (this.stack.combatTimer > 0 && this.stack.engagedWith) {
+        const sec = Math.max(0, Math.ceil(this.stack.combatTimer / 1000));
+        this._timer.setText(`⚔️${sec}s`).setColor('#ff6600');
+      } else {
+        this._timer.setText('');
+      }
     }
 
     this._busyTxt.setText(this.stack.busy ? '교전중' : '');

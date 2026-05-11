@@ -31,6 +31,8 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(W / 2, H / 2 - 10, W - 20, H - 100, 0x1e3d1a)
       .setStrokeStyle(2, 0x4a8a3a);
 
+    this.state.craftJobs = [];
+
     // 모듈 초기화
     this._engine  = new CombinationEngine(() => this.state);
     this._checker = new WinLoseChecker();
@@ -72,23 +74,34 @@ export class GameScene extends Phaser.Scene {
   }
 
   _setupEvents() {
-    // 조합 성공 처리
-    this.events.on('combine:success', ({ stackA, stackB, recipe }) => {
-      const outcome = this._engine.applyRecipe(stackA, stackB, recipe, this.state);
-      this.state.combineCount += 1;
+    // 조합 시작: 재료 카드를 뭉치에서 분리하고 조합 진행 상태로 전환
+    this.events.on('combine:start', ({ stackA, stackB, recipe, craftTime }) => {
+      // recipe 방향에 맞게 정규화
+      let cardA = stackA, cardB = stackB;
+      if (recipe.a !== stackA.type) { cardA = stackB; cardB = stackA; }
 
-      if (outcome.specialMode && outcome.specialMode.startsWith('dispatch_')) {
-        const unitType = outcome.specialMode.replace('dispatch_', '').toUpperCase();
-        this._socket?.dispatchUnit(unitType);
-        this._showFeedback(`✓ ${unitType} 파견!`, 0.5, 0.5, true);
-      } else {
-        const label = recipe.result[0] ? recipe.result[0].type : '조합';
-        this._showFeedback(`✓ ${label} 생성!`, stackA.ratioX, stackA.ratioY, true);
+      // 스택 수량 > 1이면 카드 1장 분리
+      if (cardA.count > 1) {
+        const split = cardA.split(1);
+        split.ratioX = cardA.ratioX + 0.02;
+        split.ratioY = cardA.ratioY - 0.02;
+        this.state.cards.push(split);
+        cardA = split;
+      }
+      if (cardB.count > 1) {
+        const split = cardB.split(1);
+        split.ratioX = cardB.ratioX - 0.02;
+        split.ratioY = cardB.ratioY + 0.02;
+        this.state.cards.push(split);
+        cardB = split;
       }
 
-      // PvP: 서버에 조합 알림
-      this._socket?.sendCombination(this.state.cards);
+      const now = Date.now();
+      const endAt = now + craftTime;
+      cardA.crafting = true; cardA.craftEndAt = endAt; cardA.craftStartAt = now;
+      cardB.crafting = true; cardB.craftEndAt = endAt; cardB.craftStartAt = now;
 
+      this.state.craftJobs.push({ cardAId: cardA.id, cardBId: cardB.id, recipe, endAt });
       this._refreshBoard();
     });
 
@@ -145,6 +158,9 @@ export class GameScene extends Phaser.Scene {
     // 위협 카드 만료 처리 (늑대/곰)
     this._processThreatExpiry();
 
+    // 조합 완료 처리
+    this._processCraftJobs();
+
     // 적 유닛 AI 틱 (약탈자/투석기)
     const enemies = this.state.cards.filter(c => ['RAIDER', 'CATAPULT'].includes(c.type));
     for (const enemy of enemies) {
@@ -187,6 +203,40 @@ export class GameScene extends Phaser.Scene {
     const rx = 0.1 + Math.random() * 0.8;
     const stack = new CardStack(type, count, rx, 0.15);
     this.state.cards.push(stack);
+    this._refreshBoard();
+  }
+
+  _processCraftJobs() {
+    if (!this.state.craftJobs.length) return;
+    const now = Date.now();
+    const done = this.state.craftJobs.filter(j => now >= j.endAt);
+    if (!done.length) return;
+
+    for (const job of done) {
+      const cardA = this.state.cards.find(c => c.id === job.cardAId);
+      const cardB = this.state.cards.find(c => c.id === job.cardBId);
+
+      if (cardA) { cardA.crafting = false; cardA.craftEndAt = null; cardA.craftStartAt = null; }
+      if (cardB) { cardB.crafting = false; cardB.craftEndAt = null; cardB.craftStartAt = null; }
+
+      if (cardA && cardB) {
+        const outcome = this._engine.applyRecipe(cardA, cardB, job.recipe, this.state);
+        this.state.combineCount += 1;
+
+        if (outcome.specialMode?.startsWith('dispatch_')) {
+          const unitType = outcome.specialMode.replace('dispatch_', '').toUpperCase();
+          this._socket?.dispatchUnit(unitType);
+          this._showFeedback(`✓ ${unitType} 파견!`, 0.5, 0.5, true);
+        } else {
+          const label = job.recipe.result[0]?.type ?? '조합';
+          this._showFeedback(`✓ ${label} 완성!`, cardA.ratioX, cardA.ratioY, true);
+        }
+
+        this._socket?.sendCombination(this.state.cards);
+      }
+    }
+
+    this.state.craftJobs = this.state.craftJobs.filter(j => !done.includes(j));
     this._refreshBoard();
   }
 

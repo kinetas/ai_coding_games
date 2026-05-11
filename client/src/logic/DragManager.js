@@ -28,6 +28,7 @@ export class DragManager {
   }
 
   _onPointerDown(ptr, sprite, stack) {
+    if (stack.crafting) return;
     sprite.setDragging(true);
     this._longPressTimer = this._scene.time.delayedCall(LONG_PRESS_MS, () => {
       this._splitCount = 1;
@@ -107,7 +108,11 @@ export class DragManager {
       this._showFeedback(result.error, stackA.ratioX, stackA.ratioY, 'red');
       return;
     }
-    this._scene.events.emit('combine:success', { stackA, stackB, recipe: result.recipe });
+    this._scene.events.emit('combine:start', {
+      stackA, stackB,
+      recipe: result.recipe,
+      craftTime: result.craftTime,
+    });
   }
 
   _moveStack(stack, x, y) {

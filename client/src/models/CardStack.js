@@ -8,7 +8,10 @@ export class CardStack {
     this.count       = Math.max(1, count);
     this.ratioX      = ratioX;
     this.ratioY      = ratioY;
-    this.expiresAt   = null;   // Date.now() + ms — 늑대/곰/약탈자용
+    this.expiresAt    = null;   // Date.now() + ms — 늑대/곰/약탈자용
+    this.crafting     = false;  // 조합 진행 중
+    this.craftEndAt   = null;   // 조합 완료 시각
+    this.craftStartAt = null;   // 조합 시작 시각 (진행 바 계산용)
     this.busy        = false;  // 전사가 교전 중인 경우 true
     this.strength    = 1;      // 곰은 3
     this.scoutExpiresAt = null;

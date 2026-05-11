@@ -1,63 +1,64 @@
 import { CardStack } from '../models/CardStack.js';
 
+// craftTime 단위: ms. 레시피별로 자유롭게 조정 가능.
 const RECIPES = [
   // ── 자연 자원 채집 ──
   { a: 'ROCK',     b: 'PERSON',  consumeA: true,  consumeB: false,
-    result: [{ type: 'STONE', count: 2 }] },
+    result: [{ type: 'STONE', count: 2 }], craftTime: 1500 },
   { a: 'TREE',     b: 'PERSON',  consumeA: true,  consumeB: false,
-    result: [{ type: 'WOOD',  count: 2 }] },
+    result: [{ type: 'WOOD',  count: 2 }], craftTime: 1500 },
   { a: 'FARMLAND', b: 'PERSON',  consumeA: false, consumeB: false,
-    result: [{ type: 'FOOD',  count: 1 }], farmlandProduce: true },
+    result: [{ type: 'FOOD',  count: 1 }], farmlandProduce: true, craftTime: 1500 },
 
   // ── 자연 위협 처치 ──
   { a: 'WOLF',   b: 'WARRIOR', consumeA: true, consumeB: 'prob',
-    result: [{ type: 'FOOD', count: 1 }], combatType: 'wolf' },
+    result: [{ type: 'FOOD', count: 1 }], combatType: 'wolf', craftTime: 3000 },
   { a: 'BEAR',   b: 'WARRIOR', consumeA: true, consumeB: 'prob',
-    result: [{ type: 'FOOD', count: 1 }], combatType: 'bear' },
+    result: [{ type: 'FOOD', count: 1 }], combatType: 'bear', craftTime: 3000 },
 
   // ── 자원 생산 ──
   { a: 'STONE', b: 'STONE',    consumeA: true, consumeB: true,
-    result: [{ type: 'BRICK', count: 1 }] },
+    result: [{ type: 'BRICK', count: 1 }], craftTime: 2000 },
   { a: 'FOOD',  b: 'FOOD',     consumeA: true, consumeB: true,
-    result: [{ type: 'SEED',  count: 1 }] },
+    result: [{ type: 'SEED',  count: 1 }], craftTime: 2000 },
   { a: 'SEED',  b: 'FARMLAND', consumeA: true, consumeB: true,
-    result: [{ type: 'ORCHARD', count: 1 }] },
+    result: [{ type: 'ORCHARD', count: 1 }], craftTime: 2000 },
 
   // ── 병기 제작 ──
   { a: 'WOOD',  b: 'STONE', consumeA: true, consumeB: true,
-    result: [{ type: 'SPEAR', count: 1 }] },
+    result: [{ type: 'SPEAR', count: 1 }], craftTime: 3000 },
   { a: 'SPEAR', b: 'WOOD',  consumeA: true, consumeB: true,
-    result: [{ type: 'BOW',   count: 1 }] },
+    result: [{ type: 'BOW',   count: 1 }], craftTime: 3000 },
   { a: 'WOOD',  b: 'WOOD',  consumeA: true, consumeB: true,
-    result: [{ type: 'BOAT',  count: 1 }] },
+    result: [{ type: 'BOAT',  count: 1 }], craftTime: 3000 },
 
   // ── 인구 생성 ──
   { a: 'PERSON', b: 'FOOD',  consumeA: true, consumeB: true,
-    result: [{ type: 'PERSON', count: 2 }], populationCheck: true },
+    result: [{ type: 'PERSON', count: 2 }], populationCheck: true, craftTime: 4000 },
   { a: 'PERSON', b: 'SPEAR', consumeA: true, consumeB: true,
-    result: [{ type: 'WARRIOR', count: 1 }], populationCheck: false },
+    result: [{ type: 'WARRIOR', count: 1 }], populationCheck: false, craftTime: 4000 },
   { a: 'BOW',    b: 'PERSON', consumeA: true, consumeB: true,
-    result: [{ type: 'ARCHER',  count: 1 }], populationCheck: false },
+    result: [{ type: 'ARCHER',  count: 1 }], populationCheck: false, craftTime: 4000 },
   { a: 'WOOD',   b: 'PERSON', consumeA: true, consumeB: true,
-    result: [{ type: 'SCOUT',   count: 1 }], populationCheck: false },
+    result: [{ type: 'SCOUT',   count: 1 }], populationCheck: false, craftTime: 4000 },
 
   // ── 건설 ──
   { a: 'BRICK',    b: 'BRICK',    consumeA: true, consumeB: true,
-    result: [{ type: 'WALL',     count: 1 }] },
+    result: [{ type: 'WALL',     count: 1 }], craftTime: 5000 },
   { a: 'BRICK',    b: 'TREE',     consumeA: true, consumeB: true,
-    result: [{ type: 'LOG_HOUSE', count: 1 }] },
+    result: [{ type: 'LOG_HOUSE', count: 1 }], craftTime: 5000 },
   { a: 'LOG_HOUSE', b: 'LOG_HOUSE', consumeA: true, consumeB: true,
-    result: [{ type: 'VILLAGE', count: 1 }] },
+    result: [{ type: 'VILLAGE', count: 1 }], craftTime: 5000 },
   { a: 'VILLAGE',  b: 'VILLAGE',  consumeA: true, consumeB: true,
-    result: [{ type: 'CITY',    count: 1 }] },
+    result: [{ type: 'CITY',    count: 1 }], craftTime: 5000 },
 
   // ── 공격 유닛 파견 (PvP 전용) ──
   { a: 'WARRIOR', b: 'BOAT', consumeA: true, consumeB: true,
-    result: [], dispatchType: 'RAIDER',   pvpOnly: true },
+    result: [], dispatchType: 'RAIDER',   pvpOnly: true, craftTime: 2000 },
   { a: 'ARCHER',  b: 'BOAT', consumeA: true, consumeB: true,
-    result: [], dispatchType: 'CATAPULT', pvpOnly: true },
+    result: [], dispatchType: 'CATAPULT', pvpOnly: true, craftTime: 2000 },
   { a: 'SCOUT',   b: 'BOAT', consumeA: true, consumeB: true,
-    result: [], dispatchType: 'SCOUT',    pvpOnly: true },
+    result: [], dispatchType: 'SCOUT',    pvpOnly: true, craftTime: 2000 },
 ];
 
 const POP_TYPES = ['PERSON', 'WARRIOR', 'ARCHER'];
@@ -100,7 +101,7 @@ export class CombinationEngine {
       if (farmNow >= farmLimit) return { error: `농지 제한 초과 (${farmNow}/${farmLimit})` };
     }
 
-    return { recipe, ok: true };
+    return { recipe, craftTime: recipe.craftTime ?? 1000, ok: true };
   }
 
   applyRecipe(stackA, stackB, recipe, state) {
