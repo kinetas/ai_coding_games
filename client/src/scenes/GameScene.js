@@ -81,34 +81,101 @@ export class GameScene extends Phaser.Scene {
   }
 
   _setupEvents() {
-    // 조합 시작: 재료 카드를 뭉치에서 분리하고 조합 진행 상태로 전환
     this.events.on('combine:start', ({ stackA, stackB, recipe, craftTime }) => {
-      // recipe 방향에 맞게 정규화
+      // recipe 방향 정규화
       let cardA = stackA, cardB = stackB;
       if (recipe.a !== stackA.type) { cardA = stackB; cardB = stackA; }
 
-      // 스택 수량 > 1이면 카드 1장 분리
-      if (cardA.count > 1) {
-        const split = cardA.split(1);
-        split.ratioX = cardA.ratioX + 0.02;
-        split.ratioY = cardA.ratioY - 0.02;
-        this.state.cards.push(split);
-        cardA = split;
-      }
-      if (cardB.count > 1) {
-        const split = cardB.split(1);
-        split.ratioX = cardB.ratioX - 0.02;
-        split.ratioY = cardB.ratioY + 0.02;
-        this.state.cards.push(split);
-        cardB = split;
-      }
-
       const now = Date.now();
       const endAt = now + craftTime;
-      cardA.crafting = true; cardA.craftEndAt = endAt; cardA.craftStartAt = now;
-      cardB.crafting = true; cardB.craftEndAt = endAt; cardB.craftStartAt = now;
+      const job = {
+        endAt, recipe,
+        posRx: cardA.ratioX, posRy: cardA.ratioY,
+        timerCardIds: [],  // 소요시간 표시 카드 (비소모)
+        resultCardIds: [], // 미리 생성된 결과 카드 (잠금 상태)
+        createAtEnd: false,
+        farmlandCardId: null,
+        dispatchType: recipe.dispatchType ?? null,
+        probCardId: null, wolfStrength: 0,
+        workerId: null,          // 작업 후 복귀하는 PERSON 카드 ID
+        workerReturnId: null,    // PERSON 복귀할 원본 뭉치 ID
+        probWorkerReturnId: null, // 전사 생존 시 복귀할 원본 뭉치 ID
+      };
 
-      this.state.craftJobs.push({ cardAId: cardA.id, cardBId: cardB.id, recipe, endAt });
+      // 늑대/곰: 소모 전에 strength 저장
+      if (recipe.consumeB === 'prob') {
+        job.wolfStrength = recipe.combatType === 'bear' ? 3 : cardA.count;
+      }
+
+      // ── cardA 처리 ──
+      if (recipe.consumeA) {
+        // 소모: 즉시 삭제
+        cardA.count -= 1;
+        if (cardA.count <= 0) this.state.cards = this.state.cards.filter(c => c.id !== cardA.id);
+      } else {
+        // 비소모: 소요시간 표시
+        cardA.crafting = true; cardA.craftEndAt = endAt; cardA.craftStartAt = now;
+        job.timerCardIds.push(cardA.id);
+        if (recipe.farmlandProduce) job.farmlandCardId = cardA.id;
+      }
+
+      // ── cardB 처리 ──
+      if (recipe.consumeB === true) {
+        // 소모: 즉시 삭제
+        cardB.count -= 1;
+        if (cardB.count <= 0) this.state.cards = this.state.cards.filter(c => c.id !== cardB.id);
+      } else if (recipe.consumeB === 'prob') {
+        // 전사: 낱개로 분리 후 작업 중 잠금, 완료 시 생존 시 원본 복귀
+        let warrior = cardB;
+        if (cardB.count > 1) {
+          const split = cardB.split(1);
+          split.ratioX = cardB.ratioX + 0.02;
+          split.ratioY = cardB.ratioY + 0.02;
+          this.state.cards.push(split);
+          job.probWorkerReturnId = cardB.id;
+          warrior = split;
+        }
+        warrior.crafting = true; warrior.craftEndAt = endAt; warrior.craftStartAt = now;
+        job.timerCardIds.push(warrior.id);
+        job.probCardId = warrior.id;
+      } else if (recipe.consumeA) {
+        // consumeA=true, consumeB=false: A 삭제됐으니 B가 소요시간 표시
+        cardB.crafting = true; cardB.craftEndAt = endAt; cardB.craftStartAt = now;
+        job.timerCardIds.push(cardB.id);
+      } else {
+        // consumeA=false, consumeB=false (FARMLAND+PERSON):
+        // PERSON을 낱개로 분리해 작업 중 잠금, 완료 후 원본 뭉치로 복귀
+        let worker = cardB;
+        if (cardB.count > 1) {
+          const split = cardB.split(1);
+          split.ratioX = cardB.ratioX + 0.03;
+          split.ratioY = cardB.ratioY + 0.03;
+          this.state.cards.push(split);
+          job.workerReturnId = cardB.id;
+          worker = split;
+        }
+        worker.crafting = true; worker.craftEndAt = endAt; worker.craftStartAt = now;
+        job.timerCardIds.push(worker.id);
+        job.workerId = worker.id;
+      }
+
+      // ── 결과 카드 처리 ──
+      if (job.timerCardIds.length > 0 || job.dispatchType) {
+        // worker 카드가 있거나 파견: 완료 시 결과 생성
+        job.createAtEnd = !job.dispatchType;
+      } else {
+        // 양쪽 모두 소모됨: 결과 카드를 잠금 상태로 미리 생성
+        for (const r of recipe.result) {
+          const rx = Math.min(0.9, Math.max(0.1, job.posRx + (Math.random() - 0.5) * 0.08));
+          const ry = Math.min(0.9, Math.max(0.1, job.posRy + (Math.random() - 0.5) * 0.08));
+          const pre = new CardStack(r.type, r.count, rx, ry);
+          pre.crafting = true; pre.craftEndAt = endAt; pre.craftStartAt = now;
+          this.state.cards.push(pre);
+          job.resultCardIds.push(pre.id);
+        }
+      }
+
+      this.state.craftJobs.push(job);
       this._refreshBoard();
     });
 
@@ -182,13 +249,12 @@ export class GameScene extends Phaser.Scene {
     this.state.cards = this.state.cards.filter(c => !c._toRemove);
     if (this.state.cards.length !== before) this._refreshBoard();
 
-    // 제작 중인 카드 아크 매 프레임 갱신
+    // 제작 중인 카드 매 프레임 갱신 (진행 바)
     if (this.state.craftJobs.length > 0) {
       for (const job of this.state.craftJobs) {
-        const spA = this._spriteMap.get(job.cardAId);
-        const spB = this._spriteMap.get(job.cardBId);
-        if (spA) spA.refresh(now);
-        if (spB) spB.refresh(now);
+        for (const id of [...job.timerCardIds, ...job.resultCardIds]) {
+          this._spriteMap.get(id)?.refresh(now);
+        }
       }
     }
 
@@ -203,15 +269,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   _onNaturalSpawn(type, count) {
-    const rx = 0.1 + Math.random() * 0.8;
-    const ry = 0.1 + Math.random() * 0.7;
-
     if (['WOLF', 'BEAR'].includes(type)) {
+      // 위협 카드: 각자 만료 타이머가 다르므로 항상 별도 스택
       const stack = createThreatCard(type, count);
-      if (type === 'BEAR') stack.strength = 3;
       this.state.cards.push(stack);
     } else {
-      this.state.cards.push(new CardStack(type, count, rx, ry));
+      // 자원 카드: 기존 스택에 합치기, 없으면 새로 생성
+      const existing = this.state.cards.find(c => c.type === type);
+      if (existing) {
+        existing.count += count;
+      } else {
+        const rx = 0.1 + Math.random() * 0.8;
+        const ry = 0.1 + Math.random() * 0.7;
+        this.state.cards.push(new CardStack(type, count, rx, ry));
+      }
     }
     this._refreshBoard();
   }
@@ -230,31 +301,98 @@ export class GameScene extends Phaser.Scene {
     if (!done.length) return;
 
     for (const job of done) {
-      const cardA = this.state.cards.find(c => c.id === job.cardAId);
-      const cardB = this.state.cards.find(c => c.id === job.cardBId);
-
-      if (cardA) { cardA.crafting = false; cardA.craftEndAt = null; cardA.craftStartAt = null; }
-      if (cardB) { cardB.crafting = false; cardB.craftEndAt = null; cardB.craftStartAt = null; }
-
-      if (cardA && cardB) {
-        const outcome = this._engine.applyRecipe(cardA, cardB, job.recipe, this.state);
-        this.state.combineCount += 1;
-
-        if (outcome.specialMode?.startsWith('dispatch_')) {
-          const unitType = outcome.specialMode.replace('dispatch_', '').toUpperCase();
-          this._socket?.dispatchUnit(unitType);
-          this._showFeedback(`✓ ${unitType} 파견!`, 0.5, 0.5, true);
-        } else {
-          const label = job.recipe.result[0]?.type ?? '조합';
-          this._showFeedback(`✓ ${label} 완성!`, cardA.ratioX, cardA.ratioY, true);
-        }
-
-        this._socket?.sendCombination(this.state.cards);
+      // 비소모 worker 카드: 잠금 해제
+      for (const id of job.timerCardIds) {
+        const c = this.state.cards.find(x => x.id === id);
+        if (c) { c.crafting = false; c.craftEndAt = null; c.craftStartAt = null; }
       }
+      // 미리 생성된 결과 카드: 기존 스택과 병합 가능하면 병합, 아니면 잠금 해제
+      for (const id of job.resultCardIds) {
+        const c = this.state.cards.find(x => x.id === id);
+        if (!c) continue;
+        const existing = this.state.cards.find(x => x.type === c.type && x.id !== id && !x.crafting);
+        if (existing) {
+          existing.count += c.count;
+          this.state.cards = this.state.cards.filter(x => x.id !== id);
+        } else {
+          c.crafting = false; c.craftEndAt = null; c.craftStartAt = null;
+        }
+      }
+
+      // 농지 producing 모드
+      if (job.farmlandCardId) {
+        const fl = this.state.cards.find(c => c.id === job.farmlandCardId);
+        if (fl) fl.mode = 'producing';
+      }
+
+      // worker PERSON: 원본 뭉치로 복귀
+      if (job.workerId) {
+        const worker = this.state.cards.find(c => c.id === job.workerId);
+        if (worker && job.workerReturnId) {
+          const origin = this.state.cards.find(c => c.id === job.workerReturnId);
+          if (origin) {
+            origin.count += worker.count;
+            this.state.cards = this.state.cards.filter(c => c.id !== worker.id);
+          }
+          // origin이 이미 사라진 경우 worker는 독립 카드로 남음
+        }
+      }
+
+      // 전사 생존 확률 계산
+      if (job.probCardId) {
+        const warrior = this.state.cards.find(c => c.id === job.probCardId);
+        if (warrior) {
+          const res = this._engine._resolveWarriorVsWolf(warrior.count, job.wolfStrength);
+          if (res.removed > 0) {
+            warrior.count -= res.removed;
+            if (warrior.count <= 0) this.state.cards = this.state.cards.filter(c => c.id !== warrior.id);
+          }
+          // 생존 시 원본 뭉치로 복귀
+          if (warrior.count > 0 && job.probWorkerReturnId) {
+            const origin = this.state.cards.find(c => c.id === job.probWorkerReturnId);
+            if (origin) {
+              origin.count += warrior.count;
+              this.state.cards = this.state.cards.filter(c => c.id !== warrior.id);
+            }
+          }
+        }
+      }
+
+      // 파견
+      if (job.dispatchType) {
+        this._socket?.dispatchUnit(job.dispatchType);
+        this._showFeedback(`✓ ${job.dispatchType} 파견!`, 0.5, 0.5, true);
+      }
+
+      // worker 기반 조합: 완료 시 결과 카드 생성 (기존 스택 있으면 병합)
+      if (job.createAtEnd) {
+        for (const r of job.recipe.result) {
+          const rx = Math.min(0.9, Math.max(0.1, job.posRx + (Math.random() - 0.5) * 0.08));
+          const ry = Math.min(0.9, Math.max(0.1, job.posRy + (Math.random() - 0.5) * 0.08));
+          this._mergeOrCreate(r.type, r.count, rx, ry);
+        }
+        const label = job.recipe.result[0]?.type ?? '완성';
+        this._showFeedback(`✓ ${label} 완성!`, job.posRx, job.posRy, true);
+      } else if (job.resultCardIds.length > 0) {
+        const label = job.recipe.result[0]?.type ?? '완성';
+        this._showFeedback(`✓ ${label} 완성!`, job.posRx, job.posRy, true);
+      }
+
+      this.state.combineCount += 1;
+      this._socket?.sendCombination(this.state.cards);
     }
 
     this.state.craftJobs = this.state.craftJobs.filter(j => !done.includes(j));
     this._refreshBoard();
+  }
+
+  _mergeOrCreate(type, count, rx, ry) {
+    const existing = this.state.cards.find(c => c.type === type && !c.crafting);
+    if (existing) {
+      existing.count += count;
+    } else {
+      this.state.cards.push(new CardStack(type, count, rx, ry));
+    }
   }
 
   _processThreatExpiry() {
