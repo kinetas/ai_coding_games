@@ -9,7 +9,7 @@ const config = {
   parent:          'game-container',
   width:           1280,
   height:          720,
-  backgroundColor: '#2d5a27',
+  backgroundColor: '#1a0d05',
   dom:             { createContainer: true },
   scene:           [LobbyScene, RoomScene, WaitingScene, GameScene, ResultScene],
   scale: {

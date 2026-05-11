@@ -27,9 +27,16 @@ export class GameScene extends Phaser.Scene {
 
     // 배경
     const W = this.scale.width, H = this.scale.height;
-    this.add.rectangle(W / 2, H / 2, W, H, 0x2d5a27);
-    this.add.rectangle(W / 2, H / 2 - 10, W - 20, H - 100, 0x1e3d1a)
-      .setStrokeStyle(2, 0x4a8a3a);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x1a0d05);
+    // 좌우 석조 기둥
+    this.add.rectangle(14, H / 2, 28, H, 0x231208);
+    this.add.rectangle(W - 14, H / 2, 28, H, 0x231208);
+    this.add.rectangle(28, H / 2, 2, H, 0xb87333, 0.25);
+    this.add.rectangle(W - 28, H / 2, 2, H, 0xb87333, 0.25);
+    // 플레이 필드 (황토빛 흙)
+    this.add.rectangle(W / 2, H / 2 - 10, W - 36, H - 108, 0x2d1e0a)
+      .setStrokeStyle(2, 0x6b4a2a);
+    this.add.rectangle(W / 2, 56, W - 36, 4, 0x5a3e1e);
 
     this.state.craftJobs = [];
 
@@ -58,7 +65,7 @@ export class GameScene extends Phaser.Scene {
     this._dragMgr = new DragManager(this, this.state, this._engine);
 
     // 게임 나가기 버튼
-    this._makeBtn(W - 80, H - 50, '나가기', 0x663333, () => {
+    this._makeBtn(W - 84, H - 50, '← 나가기', () => {
       this._socket?.disconnect();
       this.scene.start('LobbyScene');
     });
@@ -266,17 +273,20 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 새 카드 추가 & 위치 갱신
+    // 새 카드 추가 & 위치 갱신 (드래그 중인 카드는 위치 갱신 제외)
+    const draggingId = this._dragMgr?._dragging?.stack?.id;
     const now = Date.now();
     for (const stack of this.state.cards) {
       let sp = this._spriteMap.get(stack.id);
       if (!sp) {
         sp = this._addCardSprite(stack);
       }
-      sp.setPosition(
-        Math.min(W - 50, Math.max(50, stack.ratioX * W)),
-        Math.min(boardH - 50, Math.max(70, stack.ratioY * boardH))
-      );
+      if (stack.id !== draggingId) {
+        sp.setPosition(
+          Math.min(W - 50, Math.max(50, stack.ratioX * W)),
+          Math.min(boardH - 50, Math.max(70, stack.ratioY * boardH))
+        );
+      }
       sp.refresh(now);
     }
   }
@@ -324,11 +334,11 @@ export class GameScene extends Phaser.Scene {
   _showFeedback(msg, rx, ry, success) {
     const W = this.scale.width, H = this.scale.height;
     const x = rx * W, y = ry * (H - 90) - 50;
-    const color = success ? '#00cc44' : '#ff2222';
+    const color = success ? '#d4af37' : '#c84040';
     const txt = this.add.text(x, y, msg, {
       fontSize: '15px', color,
       fontStyle: 'bold',
-      backgroundColor: '#000000aa',
+      backgroundColor: '#1a0d05cc',
       padding: { x: 8, y: 4 },
     }).setOrigin(0.5).setDepth(200);
     this.tweens.add({
@@ -338,9 +348,15 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  _makeBtn(x, y, label, color, cb) {
-    const bg = this.add.rectangle(x, y, 100, 36, color).setInteractive().setDepth(10);
-    this.add.text(x, y, label, { fontSize: '13px', color: '#fff' }).setOrigin(0.5).setDepth(11);
+  _makeBtn(x, y, label, cb) {
+    this.add.rectangle(x + 2, y + 2, 112, 36, 0x0a0603).setDepth(10);
+    const bg = this.add.rectangle(x, y, 112, 36, 0x3d2e1a)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(10).setStrokeStyle(2, 0x6b4a2a);
+    const txt = this.add.text(x, y, label, { fontSize: '13px', color: '#c8a870' })
+      .setOrigin(0.5).setDepth(11);
+    bg.on('pointerover', () => { bg.setFillStyle(0x5a3e20); bg.setStrokeStyle(2, 0xb87333); txt.setColor('#e8c88a'); });
+    bg.on('pointerout',  () => { bg.setFillStyle(0x3d2e1a); bg.setStrokeStyle(2, 0x6b4a2a); txt.setColor('#c8a870'); });
     bg.on('pointerdown', cb);
   }
 }

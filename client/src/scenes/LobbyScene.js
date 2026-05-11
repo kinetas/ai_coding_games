@@ -6,35 +6,94 @@ export class LobbyScene extends Phaser.Scene {
     const H = this.scale.height;
     const cx = W / 2, cy = H / 2;
 
-    // 배경
-    this.add.rectangle(cx, cy, W, H, 0x1a3a1a);
+    // ── 배경: 어두운 흙빛 돌벽 ──────────────────────────────
+    this.add.rectangle(cx, cy, W, H, 0x1a0d05);
 
-    this.add.text(cx, cy - 160, 'CardForge Online',
-      { fontSize: '40px', color: '#f5c842', fontStyle: 'bold' }).setOrigin(0.5);
-    this.add.text(cx, cy - 110, '중세 카드 경영 & 전략 서바이벌',
-      { fontSize: '16px', color: '#aaddaa' }).setOrigin(0.5);
+    // 돌 블록 세로 줄눈
+    for (let x = 160; x < W; x += 160) {
+      this.add.rectangle(x, cy, 1, H, 0xffffff, 0.04);
+    }
+    // 돌 블록 가로 줄눈
+    for (let y = 60; y < H; y += 60) {
+      this.add.rectangle(cx, y, W, 1, 0xffffff, 0.04);
+    }
 
-    // 닉네임 입력 (DOM)
-    this._nickInput = this.add.dom(cx, cy - 50).createFromHTML(
+    // 상단/하단 석조 테두리
+    this.add.rectangle(cx, 22, W, 44, 0x231208);
+    this.add.rectangle(cx, 44, W, 2, 0xb87333, 0.6);
+    this.add.rectangle(cx, H - 22, W, 44, 0x231208);
+    this.add.rectangle(cx, H - 44, W, 2, 0xb87333, 0.4);
+
+    // 좌우 그늘
+    this.add.rectangle(18, cy, 36, H, 0x0a0603);
+    this.add.rectangle(W - 18, cy, 36, H, 0x0a0603);
+    this.add.rectangle(36, cy, 2, H, 0xb87333, 0.3);
+    this.add.rectangle(W - 36, cy, 2, H, 0xb87333, 0.3);
+
+    // 횃불
+    this.add.text(36, cy - 60, '🔥', { fontSize: '30px' }).setOrigin(0.5);
+    this.add.text(W - 36, cy - 60, '🔥', { fontSize: '30px' }).setOrigin(0.5);
+
+    // ── 타이틀 석판 ─────────────────────────────────────────
+    const tabW = 560, tabH = 110, tabY = cy - 165;
+    this.add.rectangle(cx + 4, tabY + 4, tabW, tabH, 0x0a0603);   // 그림자
+    this.add.rectangle(cx, tabY, tabW, tabH, 0x231208).setStrokeStyle(2, 0xb87333);
+
+    // 석판 모서리 장식
+    const hw = tabW / 2 - 6, hh = tabH / 2 - 6;
+    for (const [sx, sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) {
+      this.add.rectangle(cx + sx * hw, tabY + sy * hh, 10, 10, 0xd4af37);
+    }
+
+    // 타이틀
+    this.add.text(cx, tabY - 18, '⚒  CardForge Online  ⚒', {
+      fontSize: '34px', color: '#d4af37', fontStyle: 'bold',
+      stroke: '#4a2200', strokeThickness: 5,
+    }).setOrigin(0.5);
+
+    this.add.text(cx, tabY + 24, '원시 카드 경영 & 전략 서바이벌', {
+      fontSize: '15px', color: '#b87333', letterSpacing: 2,
+    }).setOrigin(0.5);
+
+    // ── 닉네임 입력 ──────────────────────────────────────────
+    this.add.rectangle(cx, tabY + tabH / 2 + 28, tabW, 2, 0x5a3e1e);
+
+    this._nickInput = this.add.dom(cx, cy - 34).createFromHTML(
       '<input id="nick" type="text" placeholder="닉네임 입력 (최대 12자)" maxlength="12" ' +
-      'style="font-size:18px;padding:8px 12px;width:220px;text-align:center;border-radius:6px;border:2px solid #f5c842;background:#1a2a1a;color:#fff;outline:none;">'
+      'style="font-size:16px;padding:10px 14px;width:230px;text-align:center;' +
+      'border-radius:2px;border:2px solid #b87333;border-bottom:2px solid #d4af37;' +
+      'background:#1a0d05;color:#f5e6c8;outline:none;' +
+      'font-family:Georgia,serif;letter-spacing:1px;">'
     );
 
-    this._makeBtn(cx - 100, cy + 30, 'Solo Play',  0x3a7d44, () => this._startSolo());
-    this._makeBtn(cx + 100, cy + 30, 'Multi Play', 0x2a5cb8, () => this._goMulti());
-    this._makeBtn(cx - 100, cy + 95, 'Setting',    0x555555, () => {});
-    this._makeBtn(cx + 100, cy + 95, 'Tutorial',   0x886600, () => this._showTutorial());
+    this.add.rectangle(cx, cy + 4, tabW, 2, 0x5a3e1e);
 
-    // 버전 표시
-    this.add.text(W - 10, H - 10, 'v1.0', { fontSize: '11px', color: '#555' }).setOrigin(1, 1);
+    // ── 버튼 ─────────────────────────────────────────────────
+    this._makeBtn(cx - 120, cy + 52, '⚔  혼자 하기', () => this._startSolo());
+    this._makeBtn(cx + 120, cy + 52, '🛡  함께 하기', () => this._goMulti());
+    this._makeBtn(cx - 120, cy + 116, '⚙  설정',     () => {});
+    this._makeBtn(cx + 120, cy + 116, '📜  길잡이',  () => this._showTutorial());
+
+    this.add.text(W - 12, H - 12, 'v1.0', { fontSize: '10px', color: '#5a3e1e' }).setOrigin(1, 1);
   }
 
-  _makeBtn(x, y, label, color, cb) {
-    const bg  = this.add.rectangle(x, y, 170, 46, color).setInteractive().setStrokeStyle(1, 0xffffff, 0.3);
-    const txt = this.add.text(x, y, label, { fontSize: '17px', color: '#ffffff' }).setOrigin(0.5);
-    bg.on('pointerover',  () => bg.setFillStyle(Phaser.Display.Color.ValueToColor(color).lighten(20).color));
-    bg.on('pointerout',   () => bg.setFillStyle(color));
-    bg.on('pointerdown',  cb);
+  _makeBtn(x, y, label, cb) {
+    const w = 200, h = 46;
+    this.add.rectangle(x + 3, y + 3, w, h, 0x0a0603);
+    const bg = this.add.rectangle(x, y, w, h, 0x3d2e1a)
+      .setInteractive({ useHandCursor: true })
+      .setStrokeStyle(2, 0xb87333);
+    this.add.rectangle(x, y - Math.floor(h / 2) + 3, w - 6, 4, 0x5a4030, 0.5);
+    const txt = this.add.text(x, y, label, {
+      fontSize: '15px', color: '#e8c88a', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    bg.on('pointerover', () => {
+      bg.setFillStyle(0x5a3e20); bg.setStrokeStyle(2, 0xd4af37); txt.setColor('#d4af37');
+    });
+    bg.on('pointerout', () => {
+      bg.setFillStyle(0x3d2e1a); bg.setStrokeStyle(2, 0xb87333); txt.setColor('#e8c88a');
+    });
+    bg.on('pointerdown', cb);
     return { bg, txt };
   }
 
@@ -55,32 +114,51 @@ export class LobbyScene extends Phaser.Scene {
 
   _showTutorial() {
     const W = this.scale.width, H = this.scale.height;
-    const panel = this.add.rectangle(W / 2, H / 2, W - 60, H - 80, 0x0a1a0a, 0.97)
-      .setStrokeStyle(2, 0xf5c842).setDepth(50);
+    const pw = W - 80, ph = H - 80;
+    const cx = W / 2, cy = H / 2;
+
+    // 반투명 어두운 오버레이
+    const overlay = this.add.rectangle(cx, cy, W, H, 0x000000, 0.7).setDepth(50).setInteractive();
+
+    // 석판 패널
+    const panel = this.add.rectangle(cx + 4, cy + 4, pw, ph, 0x0a0603).setDepth(50);
+    const stone = this.add.rectangle(cx, cy, pw, ph, 0x1e1005).setStrokeStyle(2, 0xb87333).setDepth(51);
+
+    // 상단 장식 띠
+    this.add.rectangle(cx, cy - ph / 2 + 24, pw, 48, 0x2d1a08).setDepth(52);
+    this.add.rectangle(cx, cy - ph / 2 + 48, pw, 2, 0xb87333, 0.7).setDepth(52);
+    this.add.text(cx, cy - ph / 2 + 24, '📜  게임 길잡이  📜', {
+      fontSize: '20px', color: '#d4af37', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(53);
+
     const lines = [
-      '== CardForge 기본 규칙 ==',
+      '═══════════════════════════════════════',
+      '  카드를 다른 카드 위로 드래그하면 조합됩니다.',
+      '  1초 길게 누르면 1장만 분리하여 드래그합니다.',
+      '  숫자키 1~9 + 드래그로 여러 장 분리합니다.',
       '',
-      '● 카드를 다른 카드 위에 드래그하면 조합이 됩니다.',
-      '● 1초 길게 누르면 1장만 분리하여 드래그합니다.',
-      '● 숫자키 1~9 + 드래그로 여러 장 분리합니다.',
+      '  ⛰ 바위 + 사람  →  돌 2장  (사람 유지)',
+      '  🌲 나무 + 사람  →  목재 2장',
+      '  🌾 농지 + 사람  →  식량 1장',
+      '  🪨 돌 + 돌  →  벽돌  |  🍖 식량 + 식량  →  씨앗',
+      '  🗡 목재 + 돌  →  창  |  🏹 창 + 목재  →  활',
+      '  ⚔ 사람 + 창  →  전사  |  🏹 활 + 사람  →  궁수',
+      '  🏠 벽돌 + 나무  →  목조 가옥  |  🏰 벽돌 + 벽돌  →  성벽',
       '',
-      '● 바위+사람 → 돌 2장 (사람 유지)',
-      '● 나무+사람 → 목재 2장',
-      '● 농지+사람 → 식량 1장',
-      '● 돌+돌 → 벽돌 | 식량+식량 → 씨앗',
-      '● 목재+돌 → 창 | 창+목재 → 활 | 목재+목재 → 배',
-      '● 사람+창 → 전사 | 활+사람 → 궁수',
-      '● 벽돌+벽돌 → 성벽 | 벽돌+나무 → 목조 가옥',
-      '',
-      '● 인구가 0이 되면 패배!',
-      '● 솔로: 최대한 오래 생존하세요.',
-      '',
-      '[ 클릭하여 닫기 ]',
+      '  인구가 0이 되면 패배!',
+      '  솔로: 최대한 오래 생존하세요.',
+      '  PvP: 상대 인구를 모두 제거하거나 왕국 점수 30점 달성 시 승리!',
+      '═══════════════════════════════════════',
+      '            [ 클릭하여 닫기 ]',
     ];
-    const txt = this.add.text(W / 2, H / 2, lines.join('\n'),
-      { fontSize: '14px', color: '#ccffcc', lineSpacing: 6, align: 'left' })
-      .setOrigin(0.5).setDepth(51);
-    panel.setInteractive();
-    panel.on('pointerdown', () => { panel.destroy(); txt.destroy(); });
+    const txt = this.add.text(cx, cy + 20, lines.join('\n'), {
+      fontSize: '13px', color: '#d4b87a', lineSpacing: 5, align: 'left',
+      fontFamily: 'Georgia, serif',
+    }).setOrigin(0.5).setDepth(53);
+
+    const close = () => { overlay.destroy(); panel.destroy(); stone.destroy(); txt.destroy(); };
+    overlay.on('pointerdown', close);
+    stone.setInteractive();
+    stone.on('pointerdown', close);
   }
 }
