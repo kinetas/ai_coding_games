@@ -1,105 +1,166 @@
-const LONG_PRESS_MS = 1000;
+const LONG_PRESS_MS = 800;
 
 export class DragManager {
   constructor(scene, state, engine) {
-    this._scene    = scene;
-    this._state    = state;
-    this._engine   = engine;
-    this._dragging = null;
-    this._longPressTimer = null;
-    this._splitCount     = 0;
-    this._pendingKey     = 0;
+    this._scene       = scene;
+    this._state       = state;
+    this._engine      = engine;
+    this._dragging    = null;  // { sprite, stack, offsetX, offsetY }
+    this._longTimer   = null;
+    this._pendingKey  = 0;
+    this._hoverTarget = null;  // sprite currently highlighted as drop target
+    this._lastPtrX    = 0;
+    this._lastPtrY    = 0;
     this._setupGlobalInput();
   }
 
+  // ── 스프라이트별 바인딩 ───────────────────────────────────────────
+
   bindSprite(sprite, stack) {
-    sprite.on('pointerover',  () => sprite.setHighlight(true));
-    sprite.on('pointerout',   () => sprite.setHighlight(false));
-    sprite.on('pointerdown',  (ptr) => this._onPointerDown(ptr, sprite, stack));
-    sprite.on('pointermove',  (ptr) => this._onPointerMove(ptr));
-    sprite.on('pointerup',    (ptr) => this._onPointerUp(ptr));
+    sprite.on('pointerover', () => {
+      if (!this._dragging) sprite.setHighlight(true);
+    });
+    sprite.on('pointerout', () => {
+      if (this._hoverTarget !== sprite) sprite.setHighlight(false);
+    });
+    sprite.on('pointerdown', (ptr) => this._onPointerDown(ptr, sprite, stack));
   }
+
+  // ── 씬 전역 입력 (드래그 중 마우스가 카드 밖으로 나가도 추적) ────
 
   _setupGlobalInput() {
     this._scene.input.keyboard.on('keydown', (e) => {
       const n = parseInt(e.key);
       if (n >= 1 && n <= 9) this._pendingKey = n;
     });
+
+    this._scene.input.on('pointermove', (ptr) => {
+      this._lastPtrX = ptr.x;
+      this._lastPtrY = ptr.y;
+      if (!this._dragging) return;
+
+      this._dragging.sprite.x = ptr.x - this._dragging.offsetX;
+      this._dragging.sprite.y = ptr.y - this._dragging.offsetY;
+      this._updateHoverHighlight(ptr.x, ptr.y);
+    });
+
+    this._scene.input.on('pointerup', (ptr) => {
+      if (this._dragging) this._onPointerUp(ptr);
+    });
   }
+
+  // ── 드래그 시작 ──────────────────────────────────────────────────
 
   _onPointerDown(ptr, sprite, stack) {
     if (stack.crafting) return;
-    sprite.setDragging(true);
-    this._longPressTimer = this._scene.time.delayedCall(LONG_PRESS_MS, () => {
-      this._splitCount = 1;
-      sprite.setHighlight(true);
-    });
+    if (this._dragging) return;
+
+    // 숫자키 확인 (N장 분리)
+    const pendingN = (this._pendingKey > 0 && this._pendingKey < stack.count)
+      ? this._pendingKey : 0;
+    this._pendingKey = 0;
+
     this._dragging = {
       sprite, stack,
       offsetX: ptr.x - sprite.x,
       offsetY: ptr.y - sprite.y,
     };
+    sprite.setDragging(true);
+
+    if (pendingN > 0) {
+      // 숫자키 → 즉시 N장 분리 후 드래그
+      this._splitAndSwitchDrag(pendingN);
+    } else {
+      // 길게 누르기 → 1장 분리
+      this._longTimer = this._scene.time.delayedCall(LONG_PRESS_MS, () => {
+        this._splitAndSwitchDrag(1);
+      });
+    }
   }
 
-  _onPointerMove(ptr) {
+  // ── 분리 후 드래그 전환 ──────────────────────────────────────────
+
+  _splitAndSwitchDrag(n) {
     if (!this._dragging) return;
-    this._dragging.sprite.x = ptr.x - this._dragging.offsetX;
-    this._dragging.sprite.y = ptr.y - this._dragging.offsetY;
+    const { sprite, stack } = this._dragging;
+    if (stack.count <= 1 || n <= 0 || n >= stack.count) return;
+
+    const cx = sprite.x, cy = sprite.y;
+
+    // 원본 스택에서 n장 분리
+    const split = stack.split(n);
+    if (stack.count <= 0) {
+      this._state.cards = this._state.cards.filter(s => s.id !== stack.id);
+    }
+    split.ratioX = cx / this._scene.scale.width;
+    split.ratioY = cy / this._scene.scale.height;
+    this._state.cards.push(split);
+
+    // 원본 스프라이트 드래그 해제 + 뱃지 갱신
+    sprite.setDragging(false);
+    sprite.refresh(Date.now());
+
+    // 분리 카드 스프라이트 생성 → 즉시 드래그 상태
+    const splitSprite = this._scene._addCardSprite(split);
+    splitSprite.setPosition(cx, cy);
+
+    this._dragging = {
+      sprite: splitSprite,
+      stack: split,
+      offsetX: this._lastPtrX - cx,
+      offsetY: this._lastPtrY - cy,
+    };
+    splitSprite.setDragging(true);
+
+    this._scene.events.emit('board:changed');
   }
+
+  // ── 드롭 대상 하이라이트 ─────────────────────────────────────────
+
+  _updateHoverHighlight(x, y) {
+    const target = this._findDropTarget(x, y, this._dragging.stack);
+    const newSp  = target?.sprite ?? null;
+
+    if (this._hoverTarget && this._hoverTarget !== newSp) {
+      this._hoverTarget.setHighlight(false);
+    }
+    if (newSp && newSp !== this._hoverTarget) {
+      newSp.setHighlight(true);
+    }
+    this._hoverTarget = newSp;
+  }
+
+  // ── 드래그 종료 ──────────────────────────────────────────────────
 
   _onPointerUp(ptr) {
     if (!this._dragging) return;
-    if (this._longPressTimer) { this._longPressTimer.remove(); this._longPressTimer = null; }
+    if (this._longTimer) { this._longTimer.remove(); this._longTimer = null; }
 
     const { sprite, stack } = this._dragging;
+
+    if (this._hoverTarget) { this._hoverTarget.setHighlight(false); this._hoverTarget = null; }
     sprite.setDragging(false);
     sprite.setHighlight(false);
-
-    let splitN = this._splitCount > 0
-      ? this._splitCount
-      : (this._pendingKey > 0 ? this._pendingKey : stack.count);
-    this._splitCount = 0;
-    this._pendingKey = 0;
 
     const target = this._findDropTarget(ptr.x, ptr.y, stack);
 
     if (!target) {
-      if (splitN < stack.count) {
-        this._doSplit(stack, splitN, ptr.x, ptr.y);
-      } else {
-        this._moveStack(stack, ptr.x, ptr.y);
-      }
+      this._moveStack(stack, ptr.x, ptr.y);
     } else if (target.stack.type === stack.type) {
-      this._doMerge(stack, target.stack, splitN);
+      this._doMerge(stack, target.stack);
     } else {
-      this._doCombine(stack, target.stack, splitN);
+      this._doCombine(stack, target.stack);
     }
 
     this._dragging = null;
     this._scene.events.emit('board:changed');
   }
 
-  _doSplit(stack, n, dropX, dropY) {
-    if (stack.count <= 1) {
-      this._moveStack(stack, dropX, dropY);
-      return;
-    }
-    const newStack = stack.split(n);
-    if (stack.count <= 0) {
-      this._state.cards = this._state.cards.filter(s => s.id !== stack.id);
-    }
-    newStack.ratioX = dropX / this._scene.scale.width;
-    newStack.ratioY = dropY / this._scene.scale.height;
-    this._state.cards.push(newStack);
-  }
+  // ── 조작 ─────────────────────────────────────────────────────────
 
-  _doMerge(src, dst, n) {
-    const moved = Math.min(n, src.count);
-    dst.count  += moved;
-    src.count  -= moved;
-    if (src.count <= 0) {
-      this._state.cards = this._state.cards.filter(s => s.id !== src.id);
-    }
+  _doMerge(src, dst) {
+    dst.count += src.count;
+    this._state.cards = this._state.cards.filter(s => s.id !== src.id);
   }
 
   _doCombine(stackA, stackB) {
@@ -120,12 +181,15 @@ export class DragManager {
     stack.ratioY = y / this._scene.scale.height;
   }
 
+  // ── 유틸 ─────────────────────────────────────────────────────────
+
   _findDropTarget(x, y, exclude) {
     if (!this._scene._spriteMap) return null;
-    for (const [id, sp] of this._scene._spriteMap) {
+    for (const [, sp] of this._scene._spriteMap) {
       if (sp.stack.id === exclude.id) continue;
-      const bounds = sp.getBounds();
-      if (Phaser.Geom.Rectangle.Contains(bounds, x, y)) {
+      if (sp.stack.crafting) continue;
+      const b = sp.getBounds();
+      if (Phaser.Geom.Rectangle.Contains(b, x, y)) {
         return { sprite: sp, stack: sp.stack };
       }
     }
@@ -137,9 +201,9 @@ export class DragManager {
     const y = ry * this._scene.scale.height - 60;
     const txt = this._scene.add.text(x, y, msg, {
       fontSize: '14px',
-      color: color === 'red' ? '#ff0000' : '#00cc00',
+      color: color === 'red' ? '#ff4444' : '#44ff88',
       fontStyle: 'bold',
-      backgroundColor: '#ffffffcc',
+      backgroundColor: '#1a0d05dd',
       padding: { x: 6, y: 4 },
     }).setOrigin(0.5).setDepth(200);
     this._scene.time.delayedCall(1500, () => txt.destroy());
