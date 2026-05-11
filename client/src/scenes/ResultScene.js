@@ -59,28 +59,35 @@ export class ResultScene extends Phaser.Scene {
     if (isSolo) {
       const t = data.survivalTime || 0;
       const m = Math.floor(t / 60), s = Math.floor(t % 60);
-      this.add.text(cx, scoreY - 20, `조합 횟수`, {
+      this.add.text(cx, scoreY - 26, `조합 횟수`, {
         fontSize: '14px', color: '#8a7050',
       }).setOrigin(0.5);
-      this.add.text(cx, scoreY + 20, `${data.myScore}회`, {
+      this.add.text(cx, scoreY + 14, `${data.myScore}회`, {
         fontSize: '38px', color: '#e8c88a', fontStyle: 'bold',
         stroke: '#4a2200', strokeThickness: 3,
       }).setOrigin(0.5);
-      this.add.text(cx, scoreY + 68, `생존 시간: ${m}분 ${String(s).padStart(2, '0')}초`, {
+      this.add.text(cx, scoreY + 58, `생존 시간: ${m}분 ${String(s).padStart(2, '0')}초`, {
         fontSize: '18px', color: '#b87333', fontFamily: 'Georgia, serif',
       }).setOrigin(0.5);
 
+      const prev = data.prevBest || { combineCount: 0, survivalTime: 0 };
+      const prevM = Math.floor(prev.survivalTime / 60);
+      const prevS = Math.floor(prev.survivalTime % 60);
+
       if (data.isNewRecord) {
-        this.add.text(cx, scoreY + 108,
+        this.add.text(cx, scoreY + 90,
           '⭐  신기록 달성!', {
-            fontSize: '24px', color: '#d4af37', fontStyle: 'bold',
+            fontSize: '22px', color: '#d4af37', fontStyle: 'bold',
             stroke: '#4a2200', strokeThickness: 3,
           }).setOrigin(0.5);
+        this.add.text(cx, scoreY + 115,
+          `이전 최고: ${prev.combineCount}회 / ${prevM}분 ${String(prevS).padStart(2, '0')}초`,
+          { fontSize: '12px', color: '#5a4030' }).setOrigin(0.5);
+      } else {
+        this.add.text(cx, scoreY + 90,
+          `이전 최고: ${prev.combineCount}회 / ${prevM}분 ${String(prevS).padStart(2, '0')}초`,
+          { fontSize: '13px', color: '#5a4030' }).setOrigin(0.5);
       }
-      const prev = data.prevBest || { combineCount: 0, survivalTime: 0 };
-      this.add.text(cx, scoreY + 100 + (data.isNewRecord ? 0 : 0),
-        `이전 최고 기록: ${prev.combineCount}회 / ${Math.floor(prev.survivalTime / 60)}분 ${Math.floor(prev.survivalTime % 60)}초`,
-        { fontSize: '13px', color: '#5a4030' }).setOrigin(0.5);
     }
 
     // PvP 점수
