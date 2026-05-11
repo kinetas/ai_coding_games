@@ -182,6 +182,16 @@ export class GameScene extends Phaser.Scene {
     this.state.cards = this.state.cards.filter(c => !c._toRemove);
     if (this.state.cards.length !== before) this._refreshBoard();
 
+    // 제작 중인 카드 아크 매 프레임 갱신
+    if (this.state.craftJobs.length > 0) {
+      for (const job of this.state.craftJobs) {
+        const spA = this._spriteMap.get(job.cardAId);
+        const spB = this._spriteMap.get(job.cardBId);
+        if (spA) spA.refresh(now);
+        if (spB) spB.refresh(now);
+      }
+    }
+
     // HUD 갱신
     this._hud.refresh(this.state, this._engine);
 
