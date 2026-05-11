@@ -1,4 +1,5 @@
 const LONG_PRESS_MS = 800;
+const MERGE_HOLD_MS = 3000;
 
 export class DragManager {
   constructor(scene, state, engine) {
@@ -11,6 +12,8 @@ export class DragManager {
     this._hoverTarget = null;  // sprite currently highlighted as drop target
     this._lastPtrX    = 0;
     this._lastPtrY    = 0;
+    this._mergeTimer  = null;  // 같은 타입 호버 3초 병합 타이머
+    this._mergeReady  = false; // 3초 충족 여부
     this._setupGlobalInput();
   }
 
@@ -123,11 +126,29 @@ export class DragManager {
 
     if (this._hoverTarget && this._hoverTarget !== newSp) {
       this._hoverTarget.setHighlight(false);
+      this._hoverTarget.setMergeHighlight(false);
+      this._clearMergeTimer();
     }
     if (newSp && newSp !== this._hoverTarget) {
       newSp.setHighlight(true);
+      // 같은 타입이면 3초 후 병합 준비 상태로 전환
+      if (target.stack.type === this._dragging.stack.type) {
+        this._mergeReady = false;
+        this._mergeTimer = this._scene.time.delayedCall(MERGE_HOLD_MS, () => {
+          this._mergeReady = true;
+          if (this._hoverTarget) {
+            this._hoverTarget.setHighlight(false);
+            this._hoverTarget.setMergeHighlight(true);
+          }
+        });
+      }
     }
     this._hoverTarget = newSp;
+  }
+
+  _clearMergeTimer() {
+    if (this._mergeTimer) { this._mergeTimer.remove(); this._mergeTimer = null; }
+    this._mergeReady = false;
   }
 
   // ── 드래그 종료 ──────────────────────────────────────────────────
@@ -137,8 +158,14 @@ export class DragManager {
     if (this._longTimer) { this._longTimer.remove(); this._longTimer = null; }
 
     const { sprite, stack } = this._dragging;
+    const wasMergeReady = this._mergeReady;
+    this._clearMergeTimer();
 
-    if (this._hoverTarget) { this._hoverTarget.setHighlight(false); this._hoverTarget = null; }
+    if (this._hoverTarget) {
+      this._hoverTarget.setHighlight(false);
+      this._hoverTarget.setMergeHighlight(false);
+      this._hoverTarget = null;
+    }
     sprite.setDragging(false);
     sprite.setHighlight(false);
 
@@ -147,7 +174,13 @@ export class DragManager {
     if (!target) {
       this._moveStack(stack, ptr.x, ptr.y);
     } else if (target.stack.type === stack.type) {
-      this._doMerge(stack, target.stack);
+      // 3초 홀드 → 병합 / 레시피 있고 즉시 드롭 → 조합 / 레시피 없으면 항상 병합
+      const recipe = this._engine.findRecipe(stack.type, target.stack.type);
+      if (!wasMergeReady && recipe) {
+        this._doCombine(stack, target.stack);
+      } else {
+        this._doMerge(stack, target.stack);
+      }
     } else {
       this._doCombine(stack, target.stack);
     }
