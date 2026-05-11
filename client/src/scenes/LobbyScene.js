@@ -156,7 +156,11 @@ export class LobbyScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif',
     }).setOrigin(0.5).setDepth(53);
 
-    const close = () => { overlay.destroy(); panel.destroy(); stone.destroy(); txt.destroy(); };
+    this._nickInput.setVisible(false);
+    const close = () => {
+      overlay.destroy(); panel.destroy(); stone.destroy(); txt.destroy();
+      this._nickInput.setVisible(true);
+    };
     overlay.on('pointerdown', close);
     stone.setInteractive();
     stone.on('pointerdown', close);
