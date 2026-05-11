@@ -65,7 +65,7 @@ export class GameScene extends Phaser.Scene {
     this._dragMgr = new DragManager(this, this.state, this._engine);
 
     // 게임 나가기 버튼
-    this._makeBtn(W - 84, H - 50, '← 나가기', () => {
+    this._makeBtn(W - 270, H - 44, '← 나가기', () => {
       this._socket?.disconnect();
       this.scene.start('LobbyScene');
     });
