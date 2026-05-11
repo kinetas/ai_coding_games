@@ -32,7 +32,8 @@
       "Bash(node server/index.js)",
       "Bash(echo \"서버 PID: $!\")",
       "Bash(curl -s http://localhost:3000/)",
-      "Skill(browse)"
+      "Skill(browse)",
+      "Bash(git rm *)"
     ]
   }
 }
