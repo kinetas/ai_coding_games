@@ -150,9 +150,19 @@ export class GameScene extends Phaser.Scene {
         job.timerCardIds.push(warrior.id);
         job.probCardId = warrior.id;
       } else if (recipe.consumeA) {
-        // consumeA=true, consumeB=false: A 삭제됐으니 B가 소요시간 표시
-        cardB.crafting = true; cardB.craftEndAt = endAt; cardB.craftStartAt = now;
-        job.timerCardIds.push(cardB.id);
+        // consumeA=true, consumeB=false: B가 worker (count>1이면 1장만 분리)
+        let worker = cardB;
+        if (cardB.count > 1) {
+          const split = cardB.split(1);
+          split.ratioX = cardB.ratioX + 0.03;
+          split.ratioY = cardB.ratioY + 0.03;
+          this.state.cards.push(split);
+          job.workerReturnId = cardB.id;
+          worker = split;
+        }
+        worker.crafting = true; worker.craftEndAt = endAt; worker.craftStartAt = now;
+        job.timerCardIds.push(worker.id);
+        job.workerId = worker.id;
       } else {
         // consumeA=false, consumeB=false (FARMLAND+PERSON):
         // PERSON을 낱개로 분리해 작업 중 잠금, 완료 후 원본 뭉치로 복귀

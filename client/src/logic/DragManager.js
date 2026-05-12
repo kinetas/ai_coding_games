@@ -55,11 +55,10 @@ export class DragManager {
   // ── 드래그 시작 ──────────────────────────────────────────────────
 
   _onPointerDown(ptr, sprite, stack) {
-    if (stack.crafting) return;
     if (this._dragging) return;
 
-    // 숫자키 확인 (N장 분리)
-    const pendingN = (this._pendingKey > 0 && this._pendingKey < stack.count)
+    // 숫자키 확인 (N장 분리) — 조합 중인 카드는 분리 불가
+    const pendingN = (!stack.crafting && this._pendingKey > 0 && this._pendingKey < stack.count)
       ? this._pendingKey : 0;
     this._pendingKey = 0;
 
@@ -73,8 +72,8 @@ export class DragManager {
     if (pendingN > 0) {
       // 숫자키 → 즉시 N장 분리 후 드래그
       this._splitAndSwitchDrag(pendingN);
-    } else {
-      // 길게 누르기 → 1장 분리
+    } else if (!stack.crafting) {
+      // 길게 누르기 → 1장 분리 (조합 중인 카드는 분리 불가)
       this._longTimer = this._scene.time.delayedCall(LONG_PRESS_MS, () => {
         this._splitAndSwitchDrag(1);
       });
@@ -171,7 +170,8 @@ export class DragManager {
 
     const target = this._findDropTarget(ptr.x, ptr.y, stack);
 
-    if (!target) {
+    // 조합 중인 카드는 이동만 가능 (조합·병합 불가)
+    if (!target || stack.crafting) {
       this._moveStack(stack, ptr.x, ptr.y);
     } else if (target.stack.type === stack.type) {
       // 3초 홀드 → 병합 / 레시피 있고 즉시 드롭 → 조합 / 레시피 없으면 항상 병합
