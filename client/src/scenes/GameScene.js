@@ -53,6 +53,7 @@ export class GameScene extends Phaser.Scene {
       this._spawnMgr    = new SpawnManager((type, count) => this._onNaturalSpawn(type, count));
       this._raidSpawner = new RaiderSpawner((type, count) => this._onRaiderSpawn(type, count));
       this._spawnMgr.start();
+      this._raidSpawner.start();
     }
 
     // 스프라이트 맵
@@ -81,6 +82,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   _setupEvents() {
+    // 씬 재시작 시 리스너가 누적 등록되는 것을 방지
+    this.events.off('combine:start');
+    this.events.off('kingdom:build');
+    this.events.off('board:changed');
+    this.events.off('net:syncStatus');
+    this.events.off('net:spawnUnit');
+    this.events.off('net:scoutReport');
+    this.events.off('net:gameOver');
+    this.events.off('net:opponentLeft');
+
     this.events.on('combine:start', ({ stackA, stackB, recipe, craftTime }) => {
       // recipe 방향 정규화
       let cardA = stackA, cardB = stackB;
@@ -204,6 +215,7 @@ export class GameScene extends Phaser.Scene {
       });
       this.events.on('net:scoutReport', (d) => {
         this._scoutMgr.onReport(d);
+        this._hud.updateScoutReport(d);
       });
       this.events.on('net:gameOver', (d) => {
         const myRole = this.state.role || 'p1';
@@ -300,6 +312,10 @@ export class GameScene extends Phaser.Scene {
     const done = this.state.craftJobs.filter(j => now >= j.endAt);
     if (!done.length) return;
 
+    // 이번 틱에 완료되는 모든 결과 카드 ID를 미리 수집
+    // → 같은 틱에 완료된 결과 카드끼리 서로 병합되는 것을 방지
+    const batchResultIds = new Set(done.flatMap(j => j.resultCardIds));
+
     for (const job of done) {
       // 비소모 worker 카드: 잠금 해제
       for (const id of job.timerCardIds) {
@@ -307,10 +323,13 @@ export class GameScene extends Phaser.Scene {
         if (c) { c.crafting = false; c.craftEndAt = null; c.craftStartAt = null; }
       }
       // 미리 생성된 결과 카드: 기존 스택과 병합 가능하면 병합, 아니면 잠금 해제
+      // 단, 같은 배치(동일 틱)에서 방금 생성된 결과 카드와는 병합하지 않는다
       for (const id of job.resultCardIds) {
         const c = this.state.cards.find(x => x.id === id);
         if (!c) continue;
-        const existing = this.state.cards.find(x => x.type === c.type && x.id !== id && !x.crafting);
+        const existing = this.state.cards.find(x =>
+          x.type === c.type && x.id !== id && !x.crafting && !batchResultIds.has(x.id)
+        );
         if (existing) {
           existing.count += c.count;
           this.state.cards = this.state.cards.filter(x => x.id !== id);

@@ -3,8 +3,8 @@ import { CardStack } from '../models/CardStack.js';
 const SPAWN_CONFIG = {
   ROCK: { minInterval: 8000,   maxInterval: 15000,  maxOnBoard: 3 },
   TREE: { minInterval: 8000,   maxInterval: 15000,  maxOnBoard: 3 },
-  WOLF: { minInterval: 30000,  maxInterval: 60000,  maxOnBoard: 4, maxCount: 3 },
-  BEAR: { minInterval: 90000,  maxInterval: 180000, maxOnBoard: 1 },
+  WOLF: { minInterval: 60000,  maxInterval: 120000, maxOnBoard: 3, maxCount: 3 },
+  BEAR: { minInterval: 150000, maxInterval: 270000, maxOnBoard: 1 },
 };
 
 export class SpawnManager {
@@ -44,15 +44,19 @@ export class SpawnManager {
 export class RaiderSpawner {
   constructor(onSpawn) {
     this._onSpawn  = onSpawn;
-    this._interval = 60000;
-    this._minInt   = 20000;
-    this._nextAt   = Date.now() + this._interval;
+    this._interval = 120000; // 첫 약탈자: 2분 후
+    this._minInt   = 30000;  // 최소 간격: 30초 (처리 10초 + 여유 20초)
+    this._nextAt   = Infinity;
+  }
+
+  start() {
+    this._nextAt = Date.now() + this._interval;
   }
 
   update() {
     if (Date.now() < this._nextAt) return;
     this._onSpawn('RAIDER', 1);
-    this._interval = Math.max(this._minInt, this._interval - 30000);
+    this._interval = Math.max(this._minInt, this._interval - 20000);
     this._nextAt   = Date.now() + this._interval;
   }
 }

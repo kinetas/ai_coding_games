@@ -42,6 +42,7 @@ function buildScoutReport(playerState) {
     persons:      cards.filter(c=>c.type==='PERSON').reduce((s,c)=>s+c.count, 0),
     food:         cards.filter(c=>c.type==='FOOD').reduce((s,c)=>s+c.count, 0),
     cities:       cards.filter(c=>c.type==='CITY').reduce((s,c)=>s+c.count, 0),
+    boats:        cards.filter(c=>c.type==='BOAT').reduce((s,c)=>s+c.count, 0),
     kingdomScore: calcKingdomScore(cards),
   };
 }

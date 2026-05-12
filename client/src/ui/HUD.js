@@ -78,13 +78,15 @@ export class HUD {
     const cities   = cards.filter(c => c.type === 'CITY').reduce((s, c) => s + c.count, 0);
     const farms    = cards.filter(c => c.type === 'FARMLAND').reduce((s, c) => s + c.count, 0);
     const farmLim  = engine._calcFarmLimit(cards);
+    const boats    = cards.filter(c => c.type === 'BOAT').reduce((s, c) => s + c.count, 0);
+    const boatLim  = engine._calcBoatLimit(cards);
     const kScore   = engine.calcKingdomScore(cards);
     const combos   = state.combineCount;
 
     // 인구 경고색
     const popColor = pop >= popLimit ? '#c84040' : '#d4b87a';
     this._statText.setText(
-      `🍖 식량: ${food}   👥 인구: ${pop}/${popLimit}   🏙 도시: ${cities}   🏰 성벽: ${walls}장   🌾 농지: ${farms}/${farmLim}   👑 ${kScore}/30   ⚒ 조합: ${combos}회`
+      `🍖 식량: ${food}   👥 인구: ${pop}/${popLimit}   🏙 도시: ${cities}   🏰 성벽: ${walls}장   🌾 농지: ${farms}/${farmLim}   ⛵ 배: ${boats}/${boatLim}   👑 ${kScore}/30   ⚒ 조합: ${combos}회`
     ).setColor(popColor);
 
     const canBuild = kScore >= 30;
@@ -113,5 +115,13 @@ export class HUD {
     this._opponentText.setText(
       `👥 인구: ${opData.pop}   🏰 성벽: ${wallTxt}   🏙 도시: ${opData.cities}   👑 ${opData.kingdomScore}/30`
     ).setColor('#b87333');
+  }
+
+  updateScoutReport(data) {
+    if (!this._opponentText) return;
+    this._opponentText.setText(
+      `🔭 정찰 중 | ⚔️ 전사: ${data.warriors}  🏹 궁수: ${data.archers}  👤 사람: ${data.persons}` +
+      `  🍖 식량: ${data.food}  🏰 성벽: ${data.walls}장  🏙 도시: ${data.cities}  ⛵ 배: ${data.boats}  👑 ${data.kingdomScore}/30`
+    ).setColor('#5aafda');
   }
 }
