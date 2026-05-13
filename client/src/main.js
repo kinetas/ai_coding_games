@@ -9,7 +9,7 @@ const config = {
   parent:          'game-container',
   width:           1280,
   height:          720,
-  backgroundColor: '#1a0d05',
+  backgroundColor: '#070402',
   dom:             { createContainer: true },
   scene:           [LobbyScene, RoomScene, WaitingScene, GameScene, ResultScene],
   scale: {
@@ -19,3 +19,4 @@ const config = {
 };
 
 export const game = new Phaser.Game(config);
+window.__game = game;

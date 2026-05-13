@@ -25,18 +25,37 @@ export class GameScene extends Phaser.Scene {
       this._socket = data.socket || null;
     }
 
-    // 배경
+    // ── 배경: Inscryption 다크 우드 테이블 ──────────────────────
     const W = this.scale.width, H = this.scale.height;
-    this.add.rectangle(W / 2, H / 2, W, H, 0x1a0d05);
-    // 좌우 석조 기둥
-    this.add.rectangle(14, H / 2, 28, H, 0x231208);
-    this.add.rectangle(W - 14, H / 2, 28, H, 0x231208);
-    this.add.rectangle(28, H / 2, 2, H, 0xb87333, 0.25);
-    this.add.rectangle(W - 28, H / 2, 2, H, 0xb87333, 0.25);
-    // 플레이 필드 (황토빛 흙)
-    this.add.rectangle(W / 2, H / 2 - 10, W - 36, H - 108, 0x2d1e0a)
-      .setStrokeStyle(2, 0x6b4a2a);
-    this.add.rectangle(W / 2, 56, W - 36, 4, 0x5a3e1e);
+    const bgGfx = this.add.graphics();
+    bgGfx.fillStyle(0x070402, 1);
+    bgGfx.fillRect(0, 0, W, H);
+    for (let y = 0; y < H; y += 5) {
+      bgGfx.fillStyle(0x2a1408, 0.01 + Math.abs(Math.sin(y * 0.14)) * 0.011);
+      bgGfx.fillRect(0, y, W, 1);
+    }
+    // 슬림 사이드 스트립
+    this.add.rectangle(8, H / 2, 16, H, 0x0c0704);
+    this.add.rectangle(W - 8, H / 2, 16, H, 0x0c0704);
+    this.add.rectangle(16, H / 2, 1, H, 0x8a5a28, 0.3);
+    this.add.rectangle(W - 16, H / 2, 1, H, 0x8a5a28, 0.3);
+    // 플레이 필드 (어두운 흙, 부족 테두리)
+    const fieldGfx = this.add.graphics();
+    const fx = 20, fy = 66, fw = W - 40, fh = H - 156;
+    fieldGfx.fillStyle(0x100a06, 1);
+    fieldGfx.fillRect(fx, fy, fw, fh);
+    fieldGfx.lineStyle(2, 0x6a3c18, 0.9);
+    fieldGfx.strokeRect(fx, fy, fw, fh);
+    fieldGfx.lineStyle(1, 0x3a1e0a, 0.5);
+    fieldGfx.strokeRect(fx + 4, fy + 4, fw - 8, fh - 8);
+    // 필드 모서리 부족 L-표식
+    fieldGfx.fillStyle(0x8a5a28, 0.78);
+    fieldGfx.fillRect(fx, fy, 14, 2);       fieldGfx.fillRect(fx, fy, 2, 14);
+    fieldGfx.fillRect(fx+fw-14, fy, 14, 2); fieldGfx.fillRect(fx+fw-2, fy, 2, 14);
+    fieldGfx.fillRect(fx, fy+fh-2, 14, 2);  fieldGfx.fillRect(fx, fy+fh-14, 2, 14);
+    fieldGfx.fillRect(fx+fw-14, fy+fh-2, 14, 2); fieldGfx.fillRect(fx+fw-2, fy+fh-14, 2, 14);
+    // HUD 구분선
+    this.add.rectangle(W / 2, fy + fh + 3, fw, 1, 0x8a5a28, 0.4);
 
     this.state.craftJobs = [];
 
@@ -511,11 +530,11 @@ export class GameScene extends Phaser.Scene {
   _showFeedback(msg, rx, ry, success) {
     const W = this.scale.width, H = this.scale.height;
     const x = rx * W, y = ry * (H - 90) - 50;
-    const color = success ? '#d4af37' : '#c84040';
+    const color = success ? '#c8960a' : '#a01808';
     const txt = this.add.text(x, y, msg, {
       fontSize: '15px', color,
       fontStyle: 'bold',
-      backgroundColor: '#1a0d05cc',
+      backgroundColor: '#0c0703cc',
       padding: { x: 8, y: 4 },
     }).setOrigin(0.5).setDepth(200);
     this.tweens.add({
@@ -526,14 +545,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   _makeBtn(x, y, label, cb) {
-    this.add.rectangle(x + 2, y + 2, 112, 36, 0x0a0603).setDepth(10);
-    const bg = this.add.rectangle(x, y, 112, 36, 0x3d2e1a)
+    this.add.rectangle(x + 2, y + 2, 112, 36, 0x000000, 0.78).setDepth(10);
+    const bg = this.add.rectangle(x, y, 112, 36, 0x140a04)
       .setInteractive({ useHandCursor: true })
-      .setDepth(10).setStrokeStyle(2, 0x6b4a2a);
-    const txt = this.add.text(x, y, label, { fontSize: '13px', color: '#c8a870' })
-      .setOrigin(0.5).setDepth(11);
-    bg.on('pointerover', () => { bg.setFillStyle(0x5a3e20); bg.setStrokeStyle(2, 0xb87333); txt.setColor('#e8c88a'); });
-    bg.on('pointerout',  () => { bg.setFillStyle(0x3d2e1a); bg.setStrokeStyle(2, 0x6b4a2a); txt.setColor('#c8a870'); });
+      .setDepth(10).setStrokeStyle(1, 0x8a5a28);
+    const txt = this.add.text(x, y, label, {
+      fontSize: '13px', color: '#c4a060', fontFamily: 'Georgia, serif',
+    }).setOrigin(0.5).setDepth(11);
+    bg.on('pointerover', () => { bg.setFillStyle(0x201408); bg.setStrokeStyle(1, 0xc8960a); txt.setColor('#e0c890'); });
+    bg.on('pointerout',  () => { bg.setFillStyle(0x140a04); bg.setStrokeStyle(1, 0x8a5a28); txt.setColor('#c4a060'); });
     bg.on('pointerdown', cb);
   }
 }
