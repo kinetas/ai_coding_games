@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Shield (kite shape) -->
+  <path d="M6 10 L6 40 Q6 56 20 60 L20 10 Z" fill="#5a3a0a"/>
+  <line x1="13" y1="14" x2="13" y2="54" stroke="#c8a030" stroke-width="2" stroke-linecap="round"/>
+  <line x1="7" y1="32" x2="19" y2="32" stroke="#c8a030" stroke-width="2" stroke-linecap="round"/>
+  <!-- Sword blade -->
+  <rect x="35" y="6" width="6" height="40" rx="2" fill="#c0c0d0"/>
+  <!-- Guard -->
+  <rect x="28" y="22" width="20" height="6" rx="3" fill="#c8a030"/>
+  <!-- Grip -->
+  <rect x="35" y="28" width="6" height="16" rx="2" fill="#7a5030"/>
+  <!-- Pommel -->
+  <circle cx="38" cy="48" r="5" fill="#c8a030"/>
+</svg>

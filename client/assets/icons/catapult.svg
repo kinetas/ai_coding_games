@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Left wheel -->
+  <circle cx="12" cy="52" r="9" fill="#7d4e1e" stroke="#5c3312" stroke-width="2"/>
+  <!-- Left wheel spokes -->
+  <line x1="12" y1="43" x2="12" y2="61" stroke="#5c3312" stroke-width="2"/>
+  <line x1="3" y1="52" x2="21" y2="52" stroke="#5c3312" stroke-width="2"/>
+  <line x1="6" y1="46" x2="18" y2="58" stroke="#5c3312" stroke-width="2"/>
+  <line x1="18" y1="46" x2="6" y2="58" stroke="#5c3312" stroke-width="2"/>
+  <!-- Right wheel -->
+  <circle cx="52" cy="52" r="9" fill="#7d4e1e" stroke="#5c3312" stroke-width="2"/>
+  <line x1="52" y1="43" x2="52" y2="61" stroke="#5c3312" stroke-width="2"/>
+  <line x1="43" y1="52" x2="61" y2="52" stroke="#5c3312" stroke-width="2"/>
+  <line x1="46" y1="46" x2="58" y2="58" stroke="#5c3312" stroke-width="2"/>
+  <line x1="58" y1="46" x2="46" y2="58" stroke="#5c3312" stroke-width="2"/>
+  <!-- Main chassis -->
+  <rect x="8" y="44" width="48" height="10" rx="3" fill="#8b6520"/>
+  <!-- Pivot post -->
+  <rect x="28" y="34" width="8" height="16" rx="2" fill="#7d5018"/>
+  <!-- Throwing arm (short end, pointing forward-left with bucket) -->
+  <line x1="32" y1="40" x2="10" y2="20" stroke="#8b6520" stroke-width="6" stroke-linecap="round"/>
+  <!-- Arm long end (counterweight side, right) -->
+  <line x1="32" y1="40" x2="56" y2="48" stroke="#8b6520" stroke-width="6" stroke-linecap="round"/>
+  <!-- Counterweight (heavy metal ball) -->
+  <circle cx="56" cy="48" r="8" fill="#5a5a6a" stroke="#4a4a5a" stroke-width="1.5"/>
+  <!-- Sling rope -->
+  <path d="M10 20 Q6 12 10 8" stroke="#c8a878" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Projectile (rock in sling) -->
+  <circle cx="10" cy="8" r="5" fill="#7a7060"/>
+</svg>

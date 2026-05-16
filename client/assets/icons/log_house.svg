@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Roof (triangle) -->
+  <polygon points="32,4 60,28 4,28" fill="#5c3312"/>
+  <!-- Roof ridge shadow -->
+  <polygon points="32,4 60,28 32,28" fill="#4a2a0a" opacity="0.3"/>
+  <!-- Log walls -->
+  <rect x="6" y="28" width="52" height="32" fill="#8b6520"/>
+  <!-- Log courses (horizontal lines) -->
+  <rect x="6" y="33" width="52" height="5" rx="0" fill="#7d5818"/>
+  <rect x="6" y="41" width="52" height="5" rx="0" fill="#7d5818"/>
+  <rect x="6" y="49" width="52" height="5" rx="0" fill="#7d5818"/>
+  <!-- Log end grain (circles at corners) -->
+  <circle cx="9" cy="30" r="3" fill="#5c3312"/>
+  <circle cx="55" cy="30" r="3" fill="#5c3312"/>
+  <circle cx="9" cy="38" r="3" fill="#5c3312"/>
+  <circle cx="55" cy="38" r="3" fill="#5c3312"/>
+  <!-- Door -->
+  <rect x="26" y="44" width="12" height="16" rx="2" fill="#3a2008"/>
+  <circle cx="35" cy="52" r="1.5" fill="#c8a030"/>
+  <!-- Windows -->
+  <rect x="10" y="33" width="10" height="7" rx="1" fill="#c8b870"/>
+  <rect x="44" y="33" width="10" height="7" rx="1" fill="#c8b870"/>
+  <!-- Window cross -->
+  <line x1="15" y1="33" x2="15" y2="40" stroke="#8b6520" stroke-width="1.5"/>
+  <line x1="10" y1="36" x2="20" y2="36" stroke="#8b6520" stroke-width="1.5"/>
+  <line x1="49" y1="33" x2="49" y2="40" stroke="#8b6520" stroke-width="1.5"/>
+  <line x1="44" y1="36" x2="54" y2="36" stroke="#8b6520" stroke-width="1.5"/>
+</svg>

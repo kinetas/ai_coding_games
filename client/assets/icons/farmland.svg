@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Sky / background (upper) -->
+  <rect x="0" y="0" width="64" height="30" fill="#87CEEB" opacity="0.3"/>
+  <!-- Ground (soil) -->
+  <rect x="4" y="42" width="56" height="20" rx="2" fill="#7a5030"/>
+  <!-- Furrow rows (dark depressions) -->
+  <rect x="4" y="46" width="56" height="3" rx="1" fill="#5a3a18"/>
+  <rect x="4" y="52" width="56" height="3" rx="1" fill="#5a3a18"/>
+  <rect x="4" y="58" width="56" height="3" rx="1" fill="#5a3a18"/>
+  <!-- Wheat stalks -->
+  <line x1="11" y1="42" x2="11" y2="20" stroke="#8a7020" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="23" y1="42" x2="21" y2="16" stroke="#8a7020" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="35" y1="42" x2="35" y2="20" stroke="#8a7020" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="47" y1="42" x2="49" y2="16" stroke="#8a7020" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Wheat heads (plump ears) -->
+  <ellipse cx="11" cy="15" rx="5" ry="8" fill="#c8a030"/>
+  <ellipse cx="21" cy="11" rx="5" ry="8" fill="#c8a030"/>
+  <ellipse cx="35" cy="15" rx="5" ry="8" fill="#c8a030"/>
+  <ellipse cx="49" cy="11" rx="5" ry="8" fill="#c8a030"/>
+  <!-- Wheat awns (little lines) -->
+  <line x1="9" y1="10" x2="6" y2="6" stroke="#a08020" stroke-width="1.5"/>
+  <line x1="13" y1="10" x2="16" y2="6" stroke="#a08020" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Back stone (lower-right) -->
+  <ellipse cx="44" cy="46" rx="16" ry="13" fill="#6a6050"/>
+  <!-- Back stone (lower-left) -->
+  <ellipse cx="18" cy="46" rx="15" ry="12" fill="#5e5848"/>
+  <!-- Front stone (center, largest) -->
+  <ellipse cx="32" cy="38" rx="18" ry="15" fill="#7a7868"/>
+  <!-- Top small stone -->
+  <ellipse cx="32" cy="24" rx="10" ry="9" fill="#8a8878"/>
+  <!-- Highlights -->
+  <ellipse cx="28" cy="21" rx="3" ry="2" fill="#a0a090" opacity="0.6"/>
+  <ellipse cx="28" cy="34" rx="5" ry="3" fill="#8a8878" opacity="0.4"/>
+</svg>

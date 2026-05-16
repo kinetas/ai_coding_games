@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Left ear -->
+  <polygon points="14,22 8,4 24,18" fill="#6a6050"/>
+  <!-- Right ear -->
+  <polygon points="50,22 56,4 40,18" fill="#6a6050"/>
+  <!-- Inner ears -->
+  <polygon points="14,22 11,10 22,19" fill="#c85050"/>
+  <polygon points="50,22 53,10 42,19" fill="#c85050"/>
+  <!-- Head -->
+  <ellipse cx="32" cy="32" rx="22" ry="20" fill="#7a7060"/>
+  <!-- Muzzle -->
+  <ellipse cx="32" cy="38" rx="12" ry="9" fill="#d0c8b0"/>
+  <!-- Nose -->
+  <ellipse cx="32" cy="31" rx="5" ry="3.5" fill="#1e1008"/>
+  <!-- Eyes -->
+  <ellipse cx="22" cy="26" rx="5" ry="5" fill="#e0b020"/>
+  <ellipse cx="42" cy="26" rx="5" ry="5" fill="#e0b020"/>
+  <circle cx="22" cy="26" r="2.5" fill="#080604"/>
+  <circle cx="42" cy="26" r="2.5" fill="#080604"/>
+  <!-- Eye shine -->
+  <circle cx="24" cy="24" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="44" cy="24" r="1" fill="#ffffff" opacity="0.7"/>
+  <!-- Mouth line -->
+  <path d="M26 44 Q32 48 38 44" stroke="#1e1008" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Ground -->
+  <rect x="0" y="52" width="64" height="12" fill="#5a4010"/>
+  <!-- Left house roof -->
+  <polygon points="17,10 34,26 0,26" fill="#5c3312"/>
+  <!-- Left house walls -->
+  <rect x="2" y="26" width="28" height="26" fill="#8b6520"/>
+  <!-- Left house door -->
+  <rect x="12" y="38" width="8" height="14" rx="1" fill="#3a2008"/>
+  <!-- Left house window -->
+  <rect x="4" y="30" width="8" height="6" rx="1" fill="#c8b870"/>
+  <line x1="8" y1="30" x2="8" y2="36" stroke="#8b6520" stroke-width="1"/>
+  <line x1="4" y1="33" x2="12" y2="33" stroke="#8b6520" stroke-width="1"/>
+  <!-- Right house roof (slightly different style) -->
+  <polygon points="47,16 64,30 30,30" fill="#4a2a0a"/>
+  <!-- Right house walls -->
+  <rect x="32" y="30" width="30" height="22" fill="#7d5018"/>
+  <!-- Right house door -->
+  <rect x="43" y="40" width="8" height="12" rx="1" fill="#3a2008"/>
+  <!-- Right house window -->
+  <rect x="34" y="34" width="7" height="5" rx="1" fill="#c8b870"/>
+  <line x1="37" y1="34" x2="37" y2="39" stroke="#7d5018" stroke-width="1"/>
+  <!-- Chimney smoke -->
+  <path d="M22 10 Q24 4 20 2" stroke="#b0a898" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.6"/>
+</svg>

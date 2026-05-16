@@ -60,8 +60,13 @@ export class CardSprite extends Phaser.GameObjects.Container {
     inner.setStrokeStyle(1, borCol, 0.3);
     this.add(inner);
 
-    // 이모지 아이콘
-    this.add(this.scene.add.text(0, -20, meta.icon, { fontSize: '30px' }).setOrigin(0.5));
+    // SVG 아이콘
+    const iconKey = `icon_${this.stack.type.toLowerCase()}`;
+    if (this.scene.textures.exists(iconKey)) {
+      this.add(this.scene.add.image(0, -16, iconKey).setDisplaySize(44, 44));
+    } else {
+      this.add(this.scene.add.text(0, -20, meta.icon, { fontSize: '28px' }).setOrigin(0.5));
+    }
 
     // 카드 이름
     this.add(this.scene.add.text(0, 24, meta.label, {

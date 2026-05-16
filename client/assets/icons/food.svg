@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Meat (upper-right oval) -->
+  <ellipse cx="40" cy="26" rx="20" ry="17" fill="#c06030"/>
+  <!-- Meat highlight -->
+  <ellipse cx="34" cy="20" rx="9" ry="6" fill="#d07840" opacity="0.6"/>
+  <!-- Bone shaft -->
+  <rect x="6" y="27" width="34" height="10" rx="5" fill="#e8d5a0"/>
+  <!-- Bone knob (handle end) -->
+  <ellipse cx="8" cy="32" rx="8" ry="9" fill="#e8d5a0"/>
+  <!-- Second knob -->
+  <ellipse cx="10" cy="46" rx="6" ry="7" fill="#d8c590"/>
+  <!-- Joint end of bone (meat side) -->
+  <ellipse cx="40" cy="32" rx="6" ry="7" fill="#d8c590"/>
+</svg>

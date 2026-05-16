@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Telescope body (main large tube) -->
+  <rect x="4" y="26" width="38" height="14" rx="6" fill="#7d5018"/>
+  <!-- Second retracted section -->
+  <rect x="30" y="22" width="24" height="22" rx="6" fill="#5c3a10"/>
+  <!-- Eyepiece end -->
+  <ellipse cx="8" cy="33" rx="6" ry="8" fill="#3a2008"/>
+  <!-- Objective lens housing -->
+  <circle cx="54" cy="33" rx="0" r="10" fill="#1a3a50" stroke="#3a2008" stroke-width="2"/>
+  <circle cx="54" cy="33" r="10" fill="#1a3a50" stroke="#3a2008" stroke-width="2"/>
+  <!-- Lens reflection -->
+  <circle cx="50" cy="29" r="3" fill="#60a8c8" opacity="0.7"/>
+  <circle cx="54" cy="33" r="5" fill="#2a6080" opacity="0.5"/>
+  <!-- Brass bands -->
+  <rect x="28" y="24" width="4" height="18" rx="1" fill="#c8a030" opacity="0.8"/>
+  <rect x="36" y="22" width="4" height="22" rx="1" fill="#a07820" opacity="0.6"/>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Brick body -->
+  <rect x="4" y="14" width="56" height="36" rx="4" fill="#8b4020"/>
+  <!-- Top face highlight -->
+  <rect x="4" y="14" width="56" height="10" rx="4" fill="#a05030"/>
+  <!-- Horizontal mortar lines -->
+  <line x1="4" y1="32" x2="60" y2="32" stroke="#6a3010" stroke-width="2.5"/>
+  <!-- Vertical mortar joints - top half (staggered) -->
+  <line x1="18" y1="14" x2="18" y2="32" stroke="#6a3010" stroke-width="2.5"/>
+  <line x1="40" y1="14" x2="40" y2="32" stroke="#6a3010" stroke-width="2.5"/>
+  <!-- Vertical mortar joints - bottom half (offset) -->
+  <line x1="10" y1="32" x2="10" y2="50" stroke="#6a3010" stroke-width="2.5"/>
+  <line x1="32" y1="32" x2="32" y2="50" stroke="#6a3010" stroke-width="2.5"/>
+  <line x1="54" y1="32" x2="54" y2="50" stroke="#6a3010" stroke-width="2.5"/>
+  <!-- Side shadow -->
+  <rect x="50" y="14" width="10" height="36" rx="2" fill="#6a2a10" opacity="0.3"/>
+</svg>

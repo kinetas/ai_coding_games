@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Bottom layer (darkest) -->
+  <polygon points="32,22 58,54 6,54" fill="#2d6020"/>
+  <!-- Middle layer -->
+  <polygon points="32,12 54,40 10,40" fill="#3a7828"/>
+  <!-- Top layer (lightest) -->
+  <polygon points="32,2 48,26 16,26" fill="#4a8a32"/>
+  <!-- Trunk -->
+  <rect x="27" y="54" width="10" height="8" rx="2" fill="#7d4e1e"/>
+  <!-- Ground shadow -->
+  <ellipse cx="32" cy="62" rx="18" ry="3" fill="#1a3a10" opacity="0.4"/>
+</svg>

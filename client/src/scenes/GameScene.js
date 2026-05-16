@@ -11,8 +11,23 @@ import { ScoutManager } from '../logic/ScoutManager.js';
 import { CardSprite } from '../ui/CardSprite.js';
 import { HUD } from '../ui/HUD.js';
 
+const ICON_KEYS = [
+  'person', 'warrior', 'archer', 'scout',
+  'rock', 'tree',
+  'wolf', 'bear',
+  'food', 'seed', 'stone', 'wood', 'spear', 'bow', 'boat', 'brick',
+  'wall', 'farmland', 'orchard', 'log_house', 'village', 'city',
+  'raider', 'catapult',
+];
+
 export class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
+
+  preload() {
+    ICON_KEYS.forEach(k =>
+      this.load.svg(`icon_${k}`, `assets/icons/${k}.svg`, { width: 64, height: 64 })
+    );
+  }
 
   create(data) {
     this._data = data;
