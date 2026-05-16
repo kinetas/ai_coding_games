@@ -1,7 +1,10 @@
+import { SoundManager } from '../ui/SoundManager.js';
+
 export class LobbyScene extends Phaser.Scene {
   constructor() { super('LobbyScene'); }
 
   create() {
+    SoundManager.get().playLobbyBGM();
     const W = this.scale.width;
     const H = this.scale.height;
     const cx = W / 2, cy = H / 2;
@@ -89,11 +92,12 @@ export class LobbyScene extends Phaser.Scene {
     }).setOrigin(0.5);
     bg.on('pointerover', () => {
       bg.setFillStyle(0x5a3e20); bg.setStrokeStyle(2, 0xd4af37); txt.setColor('#d4af37');
+      SoundManager.get().sfxHover();
     });
     bg.on('pointerout', () => {
       bg.setFillStyle(0x3d2e1a); bg.setStrokeStyle(2, 0xb87333); txt.setColor('#e8c88a');
     });
-    bg.on('pointerdown', cb);
+    bg.on('pointerdown', () => { SoundManager.get().sfxClick(); cb(); });
     return { bg, txt };
   }
 

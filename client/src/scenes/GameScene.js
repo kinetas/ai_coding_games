@@ -10,6 +10,7 @@ import { ArcherDefense } from '../logic/ArcherDefense.js';
 import { ScoutManager } from '../logic/ScoutManager.js';
 import { CardSprite } from '../ui/CardSprite.js';
 import { HUD } from '../ui/HUD.js';
+import { SoundManager } from '../ui/SoundManager.js';
 
 const ICON_KEYS = [
   'person', 'warrior', 'archer', 'scout',
@@ -93,6 +94,9 @@ export class GameScene extends Phaser.Scene {
 
     this._lastTime = Date.now();
     this._gameOver = false;
+
+    SoundManager.get().playGameBGM();
+    this.events.once('shutdown', () => SoundManager.get().stopBGM());
   }
 
   _setupEvents() {
@@ -518,8 +522,8 @@ export class GameScene extends Phaser.Scene {
       .setDepth(10).setStrokeStyle(2, 0x6b4a2a);
     const txt = this.add.text(x, y, label, { fontSize: '13px', color: '#c8a870' })
       .setOrigin(0.5).setDepth(11);
-    bg.on('pointerover', () => { bg.setFillStyle(0x5a3e20); bg.setStrokeStyle(2, 0xb87333); txt.setColor('#e8c88a'); });
+    bg.on('pointerover', () => { bg.setFillStyle(0x5a3e20); bg.setStrokeStyle(2, 0xb87333); txt.setColor('#e8c88a'); SoundManager.get().sfxHover(); });
     bg.on('pointerout',  () => { bg.setFillStyle(0x3d2e1a); bg.setStrokeStyle(2, 0x6b4a2a); txt.setColor('#c8a870'); });
-    bg.on('pointerdown', cb);
+    bg.on('pointerdown', () => { SoundManager.get().sfxClick(); cb(); });
   }
 }

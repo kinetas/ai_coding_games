@@ -1,3 +1,5 @@
+import { SoundManager } from '../ui/SoundManager.js';
+
 const LONG_PRESS_MS = 800;
 const MERGE_HOLD_MS = 3000;
 
@@ -21,7 +23,10 @@ export class DragManager {
 
   bindSprite(sprite, stack) {
     sprite.on('pointerover', () => {
-      if (!this._dragging) sprite.setHighlight(true);
+      if (!this._dragging) {
+        sprite.setHighlight(true);
+        SoundManager.get().sfxCardHover();
+      }
     });
     sprite.on('pointerout', () => {
       if (this._hoverTarget !== sprite) sprite.setHighlight(false);
@@ -182,6 +187,7 @@ export class DragManager {
         this._doMerge(stack, target.stack);
       }
     } else {
+      SoundManager.get().sfxCombineDrop();
       this._doCombine(stack, target.stack);
     }
 
