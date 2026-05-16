@@ -30,7 +30,7 @@ export class SoundManager {
     m.connect(this._ctx.destination);
 
     this._bgmOut = this._ctx.createGain();
-    this._bgmOut.gain.value = 0.12;
+    this._bgmOut.gain.value = 0;   // BGM 전체 음소거
     this._bgmOut.connect(m);
 
     this._sfxOut = this._ctx.createGain();
@@ -218,6 +218,11 @@ export class SoundManager {
       const idx = sess.oscs.indexOf(osc);
       if (idx !== -1) sess.oscs.splice(idx, 1);
     };
+  }
+
+  // ctx가 이미 running 상태인지 (게임에서 돌아온 경우 등)
+  isRunning() {
+    return !!(this._ctx && this._ctx.state === 'running');
   }
 
   // ── SFX ──────────────────────────────────────────────────────

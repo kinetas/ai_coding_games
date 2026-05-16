@@ -6,6 +6,7 @@ export class LobbyScene extends Phaser.Scene {
   create() {
     SoundManager.get().playLobbyBGM();
     const W = this.scale.width;
+    const _audioReady = SoundManager.get().isRunning(); // 게임에서 돌아온 경우 true
     const H = this.scale.height;
     const cx = W / 2, cy = H / 2;
 
@@ -78,6 +79,9 @@ export class LobbyScene extends Phaser.Scene {
     this._makeBtn(cx + 120, cy + 116, '📜  길잡이',  () => this._showTutorial());
 
     this.add.text(W - 12, H - 12, 'v1.0', { fontSize: '10px', color: '#5a3e1e' }).setOrigin(1, 1);
+
+    // ctx가 아직 suspended 상태면 "클릭하여 시작" 오버레이 표시
+    if (!_audioReady) this._showStartOverlay(W, H);
   }
 
   _makeBtn(x, y, label, cb) {
@@ -114,6 +118,57 @@ export class LobbyScene extends Phaser.Scene {
   _goMulti() {
     const nick = this._getNick();
     this.scene.start('RoomScene', { nickname: nick });
+  }
+
+  _showStartOverlay(W, H) {
+    const cx = W / 2, cy = H / 2;
+
+    // 반투명 오버레이 (뒤 UI 비치게, topOnly=true라 버튼 클릭을 막음)
+    const overlay = this.add.rectangle(cx, cy, W, H, 0x000000, 0.55)
+      .setDepth(500).setInteractive();
+
+    // 중앙 석판 힌트
+    const boxW = 320, boxH = 80;
+    const shadow = this.add.rectangle(cx + 3, cy + 3, boxW, boxH, 0x0a0603).setDepth(501);
+    const box    = this.add.rectangle(cx, cy, boxW, boxH, 0x2d1a08)
+      .setStrokeStyle(2, 0xb87333).setDepth(501);
+
+    const hint = this.add.text(cx, cy, '🎵  클릭하여 시작', {
+      fontSize: '20px', color: '#d4af37', fontStyle: 'bold',
+      stroke: '#0a0603', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(502);
+
+    this.tweens.add({
+      targets: [box, hint],
+      alpha: { from: 1, to: 0.45 },
+      duration: 900,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+    });
+
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      document.removeEventListener('pointerdown', docDismiss, true);
+      if (overlay.scene) overlay.destroy();
+      if (shadow.scene) shadow.destroy();
+      if (box.scene) box.destroy();
+      if (hint.scene) hint.destroy();
+    };
+
+    // Phaser 캔버스 클릭 처리
+    overlay.once('pointerdown', dismiss);
+
+    // DOM 요소(닉네임 입력란 등) 클릭도 처리 — capture phase
+    const docDismiss = () => dismiss();
+    document.addEventListener('pointerdown', docDismiss, { passive: true, capture: true });
+
+    // 씬 종료 시 정리
+    this.events.once('shutdown', () => {
+      document.removeEventListener('pointerdown', docDismiss, true);
+    });
   }
 
   _showTutorial() {
