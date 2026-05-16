@@ -100,6 +100,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   _setupEvents() {
+    // 씬 재시작 시 중복 등록 방지 — 이전 create()에서 추가된 리스너 제거
+    ['combine:start', 'kingdom:build', 'board:changed',
+     'net:syncStatus', 'net:spawnUnit', 'net:scoutReport',
+     'net:gameOver', 'net:opponentLeft'].forEach(e => this.events.off(e));
+
     this.events.on('combine:start', ({ stackA, stackB, recipe, craftTime }) => {
       // recipe 방향 정규화
       let cardA = stackA, cardB = stackB;
