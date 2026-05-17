@@ -100,10 +100,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   _setupEvents() {
-    // 씬 재시작 시 중복 등록 방지 — 이전 create()에서 추가된 리스너 제거
-    ['combine:start', 'kingdom:build', 'board:changed',
-     'net:syncStatus', 'net:spawnUnit', 'net:scoutReport',
-     'net:gameOver', 'net:opponentLeft'].forEach(e => this.events.off(e));
+    const SCENE_EVENTS = [
+      'combine:start', 'kingdom:build', 'board:changed',
+      'net:syncStatus', 'net:spawnUnit', 'net:scoutReport',
+      'net:gameOver', 'net:opponentLeft',
+    ];
+
+    // create() 재호출 시 이전 리스너 제거
+    SCENE_EVENTS.forEach(e => this.events.off(e));
+
+    // shutdown 시에도 확실히 정리 (씬 전환·파괴 경로 모두 커버)
+    this.events.once('shutdown', () => SCENE_EVENTS.forEach(e => this.events.off(e)));
 
     this.events.on('combine:start', ({ stackA, stackB, recipe, craftTime }) => {
       // recipe 방향 정규화
@@ -128,7 +135,7 @@ export class GameScene extends Phaser.Scene {
 
       // 늑대/곰: 소모 전에 strength 저장
       if (recipe.consumeB === 'prob') {
-        job.wolfStrength = recipe.combatType === 'bear' ? 3 : cardA.count;
+        job.wolfStrength = recipe.combatType === 'bear' ? cardA.strength : cardA.count;
       }
 
       // ── cardA 처리 ──
@@ -259,6 +266,9 @@ export class GameScene extends Phaser.Scene {
     // 조합 완료 처리
     this._processCraftJobs();
 
+    // 만료·조합 단계에서 마킹된 카드를 AI 틱 전에 제거 (제거된 카드 참조 방지)
+    this.state.cards = this.state.cards.filter(c => !c._toRemove);
+
     // 적 유닛 AI 틱 (약탈자/투석기)
     const enemies = this.state.cards.filter(c => ['RAIDER', 'CATAPULT'].includes(c.type));
     for (const enemy of enemies) {
@@ -268,7 +278,7 @@ export class GameScene extends Phaser.Scene {
     // 궁수 자동 방어
     if (enemies.length > 0) this._archerDef.tick(this.state.cards, enemies);
 
-    // 제거 마킹된 카드 정리
+    // AI·궁수 틱에서 마킹된 카드 정리
     const before = this.state.cards.length;
     this.state.cards = this.state.cards.filter(c => !c._toRemove);
     if (this.state.cards.length !== before) this._refreshBoard();
@@ -312,9 +322,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   _onRaiderSpawn(type, count) {
-    const rx = 0.1 + Math.random() * 0.8;
-    const stack = new CardStack(type, count, rx, 0.15);
-    this.state.cards.push(stack);
+    // 교전 중이 아닌 기존 스택에 합산 (스택 파편화 방지)
+    const existing = this.state.cards.find(c => c.type === type && !c.crafting && !c.engagedWith);
+    if (existing) {
+      existing.count += count;
+    } else {
+      const rx = 0.1 + Math.random() * 0.8;
+      this.state.cards.push(new CardStack(type, count, rx, 0.15));
+    }
     this._refreshBoard();
   }
 
@@ -444,7 +459,7 @@ export class GameScene extends Phaser.Scene {
       ['WOLF', 'BEAR'].includes(c.type) && c.expiresAt && now >= c.expiresAt
     );
     for (const card of threats) {
-      const strength = card.type === 'BEAR' ? 3 : card.count;
+      const strength = card.type === 'BEAR' ? card.strength : card.count;
       applyRaid(this.state.cards, strength);
       this.state.cards = this.state.cards.filter(c => c.id !== card.id);
       this._showFeedback('🐺 습격!', 0.5, 0.4, false);
@@ -455,6 +470,9 @@ export class GameScene extends Phaser.Scene {
   _refreshBoard() {
     const W = this.scale.width, H = this.scale.height;
     const boardH = H - 90;
+
+    // count=0 유령 카드 제거 (split/combat 후 잔존 방지)
+    this.state.cards = this.state.cards.filter(c => c.count > 0);
 
     // 제거된 스택 처리
     for (const [id, sp] of this._spriteMap) {

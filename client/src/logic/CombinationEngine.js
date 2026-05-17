@@ -100,7 +100,7 @@ export class CombinationEngine {
       const state    = this._getState();
       const popNow   = this._countPop(state.cards);
       const popLimit = this._calcPopLimit(state.cards);
-      // 사람+식량: 결과 2명, 재료 2명 소모 → 순증가 1
+      // 결과 인구 - 소모 인구 = 순증가. > (not >=): 제한까지는 도달 허용, 초과만 차단
       const willAdd  = recipe.result.reduce((s, r) =>
         s + (POP_TYPES.includes(r.type) ? r.count : 0), 0);
       const consumed = (recipe.consumeA && POP_TYPES.includes(recipe.a) ? 1 : 0)
@@ -111,10 +111,11 @@ export class CombinationEngine {
     }
 
     if (recipe.result.some(r => r.type === 'FARMLAND')) {
-      const state    = this._getState();
-      const farmNow  = state.cards.filter(c => c.type === 'FARMLAND').reduce((s, c) => s + c.count, 0);
+      const state     = this._getState();
+      const farmNow   = state.cards.filter(c => c.type === 'FARMLAND').reduce((s, c) => s + c.count, 0);
       const farmLimit = this._calcFarmLimit(state.cards);
-      if (farmNow >= farmLimit) return { error: `농지 제한 초과 (${farmNow}/${farmLimit})` };
+      const farmAdded = recipe.result.filter(r => r.type === 'FARMLAND').reduce((s, r) => s + r.count, 0);
+      if (farmNow + farmAdded > farmLimit) return { error: `농지 제한 초과 (${farmNow}/${farmLimit})` };
     }
 
     return { recipe, craftTime: recipe.craftTime ?? 1000, ok: true };

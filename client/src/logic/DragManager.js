@@ -142,7 +142,7 @@ export class DragManager {
       newSp.setHighlight(true);
       // 같은 타입이면 3초 후 병합 준비 상태로 전환
       if (target.stack.type === this._dragging.stack.type) {
-        this._mergeReady = false;
+        this._clearMergeTimer(); // 이전 타이머가 살아 있을 경우 방어적 정리
         this._mergeTimer = this._scene.time.delayedCall(MERGE_HOLD_MS, () => {
           this._mergeReady = true;
           if (this._hoverTarget) {

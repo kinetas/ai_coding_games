@@ -80,6 +80,7 @@ export class SoundManager {
   stopBGM() {
     if (this._bgmTimeout) { clearTimeout(this._bgmTimeout); this._bgmTimeout = null; }
     this._bgmDef    = null;
+    this._bgmLoopAt = 0;
     this._pendingTag = null;
     this._bgmTag    = null;
     this._bgmSess   = null;
