@@ -141,7 +141,7 @@ export class CombinationEngine {
       const warriorCount = realB.count;
       const result = this._resolveWarriorVsWolf(warriorCount, wolfStrength);
       if (result.removed > 0) {
-        realB.count -= result.removed;
+        realB.count = Math.max(0, realB.count - result.removed);
         if (realB.count <= 0) state.cards = state.cards.filter(c => c.id !== realB.id);
       }
       realA.count = 0;

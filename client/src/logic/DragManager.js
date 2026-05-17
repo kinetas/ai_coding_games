@@ -5,17 +5,18 @@ const MERGE_HOLD_MS = 3000;
 
 export class DragManager {
   constructor(scene, state, engine) {
-    this._scene       = scene;
-    this._state       = state;
-    this._engine      = engine;
-    this._dragging    = null;  // { sprite, stack, offsetX, offsetY }
-    this._longTimer   = null;
-    this._pendingKey  = 0;
-    this._hoverTarget = null;  // sprite currently highlighted as drop target
-    this._lastPtrX    = 0;
-    this._lastPtrY    = 0;
-    this._mergeTimer  = null;  // 같은 타입 호버 3초 병합 타이머
-    this._mergeReady  = false; // 3초 충족 여부
+    this._scene              = scene;
+    this._state              = state;
+    this._engine             = engine;
+    this._dragging           = null;  // { sprite, stack, offsetX, offsetY }
+    this._longTimer          = null;
+    this._pendingKey         = 0;
+    this._hoverTarget        = null;  // sprite currently highlighted as drop target
+    this._lastPtrX           = 0;
+    this._lastPtrY           = 0;
+    this._mergeTimer         = null;  // 같은 타입 호버 3초 병합 타이머
+    this._mergeReady         = false; // 3초 충족 여부
+    this._globalInputActive  = false; // 전역 리스너 중복 등록 방지
     this._setupGlobalInput();
   }
 
@@ -37,6 +38,9 @@ export class DragManager {
   // ── 씬 전역 입력 (드래그 중 마우스가 카드 밖으로 나가도 추적) ────
 
   _setupGlobalInput() {
+    if (this._globalInputActive) return;
+    this._globalInputActive = true;
+
     this._scene.input.keyboard.on('keydown', (e) => {
       const n = parseInt(e.key);
       if (n >= 1 && n <= 9) this._pendingKey = n;

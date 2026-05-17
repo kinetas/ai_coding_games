@@ -368,7 +368,7 @@ export class GameScene extends Phaser.Scene {
         if (warrior) {
           const res = this._engine._resolveWarriorVsWolf(warrior.count, job.wolfStrength);
           if (res.removed > 0) {
-            warrior.count -= res.removed;
+            warrior.count = Math.max(0, warrior.count - res.removed);
             if (warrior.count <= 0) this.state.cards = this.state.cards.filter(c => c.id !== warrior.id);
           }
           // 생존 시 원본 뭉치로 복귀
@@ -407,7 +407,26 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.state.craftJobs = this.state.craftJobs.filter(j => !done.includes(j));
+    if (done.length > 0) this._autoFarmlandProduce();
     this._refreshBoard();
+  }
+
+  // 생산 모드 농지: 유휴 PERSON이 있으면 자동으로 수확 사이클 재시작
+  _autoFarmlandProduce() {
+    const activeFarmIds = new Set(
+      this.state.craftJobs.flatMap(j => j.farmlandCardId ? [j.farmlandCardId] : [])
+    );
+    const farms = this.state.cards.filter(
+      c => c.type === 'FARMLAND' && c.mode === 'producing' && !c.crafting && !activeFarmIds.has(c.id)
+    );
+    for (const farm of farms) {
+      const person = this.state.cards.find(c => c.type === 'PERSON' && !c.crafting);
+      if (!person) break;
+      const recipe = this._engine.findRecipe('FARMLAND', 'PERSON');
+      if (recipe) {
+        this.events.emit('combine:start', { stackA: farm, stackB: person, recipe, craftTime: recipe.craftTime });
+      }
+    }
   }
 
   _mergeOrCreate(type, count, rx, ry) {
