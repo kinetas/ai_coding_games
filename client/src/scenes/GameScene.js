@@ -41,18 +41,37 @@ export class GameScene extends Phaser.Scene {
       this._socket = data.socket || null;
     }
 
-    // 배경
+    // ── 배경: Inscryption 다크 우드 테이블 ──────────────────────
     const W = this.scale.width, H = this.scale.height;
-    this.add.rectangle(W / 2, H / 2, W, H, 0x1a0d05);
-    // 좌우 석조 기둥
-    this.add.rectangle(14, H / 2, 28, H, 0x231208);
-    this.add.rectangle(W - 14, H / 2, 28, H, 0x231208);
-    this.add.rectangle(28, H / 2, 2, H, 0xb87333, 0.25);
-    this.add.rectangle(W - 28, H / 2, 2, H, 0xb87333, 0.25);
-    // 플레이 필드 (황토빛 흙)
-    this.add.rectangle(W / 2, H / 2 - 10, W - 36, H - 108, 0x2d1e0a)
-      .setStrokeStyle(2, 0x6b4a2a);
-    this.add.rectangle(W / 2, 56, W - 36, 4, 0x5a3e1e);
+    const bgGfx = this.add.graphics();
+    bgGfx.fillStyle(0x070402, 1);
+    bgGfx.fillRect(0, 0, W, H);
+    for (let y = 0; y < H; y += 5) {
+      bgGfx.fillStyle(0x2a1408, 0.01 + Math.abs(Math.sin(y * 0.14)) * 0.011);
+      bgGfx.fillRect(0, y, W, 1);
+    }
+    // 슬림 사이드 스트립
+    this.add.rectangle(8, H / 2, 16, H, 0x0c0704);
+    this.add.rectangle(W - 8, H / 2, 16, H, 0x0c0704);
+    this.add.rectangle(16, H / 2, 1, H, 0x8a5a28, 0.3);
+    this.add.rectangle(W - 16, H / 2, 1, H, 0x8a5a28, 0.3);
+    // 플레이 필드 (어두운 흙, 부족 테두리)
+    const fieldGfx = this.add.graphics();
+    const fx = 20, fy = 66, fw = W - 40, fh = H - 156;
+    fieldGfx.fillStyle(0x100a06, 1);
+    fieldGfx.fillRect(fx, fy, fw, fh);
+    fieldGfx.lineStyle(2, 0x6a3c18, 0.9);
+    fieldGfx.strokeRect(fx, fy, fw, fh);
+    fieldGfx.lineStyle(1, 0x3a1e0a, 0.5);
+    fieldGfx.strokeRect(fx + 4, fy + 4, fw - 8, fh - 8);
+    // 필드 모서리 부족 L-표식
+    fieldGfx.fillStyle(0x8a5a28, 0.78);
+    fieldGfx.fillRect(fx, fy, 14, 2);       fieldGfx.fillRect(fx, fy, 2, 14);
+    fieldGfx.fillRect(fx+fw-14, fy, 14, 2); fieldGfx.fillRect(fx+fw-2, fy, 2, 14);
+    fieldGfx.fillRect(fx, fy+fh-2, 14, 2);  fieldGfx.fillRect(fx, fy+fh-14, 2, 14);
+    fieldGfx.fillRect(fx+fw-14, fy+fh-2, 14, 2); fieldGfx.fillRect(fx+fw-2, fy+fh-14, 2, 14);
+    // HUD 구분선
+    this.add.rectangle(W / 2, fy + fh + 3, fw, 1, 0x8a5a28, 0.4);
 
     this.state.craftJobs = [];
 
@@ -69,6 +88,7 @@ export class GameScene extends Phaser.Scene {
       this._spawnMgr    = new SpawnManager((type, count) => this._onNaturalSpawn(type, count));
       this._raidSpawner = new RaiderSpawner((type, count) => this._onRaiderSpawn(type, count));
       this._spawnMgr.start();
+      this._raidSpawner.start();
     }
 
     // 스프라이트 맵
@@ -170,9 +190,19 @@ export class GameScene extends Phaser.Scene {
         job.timerCardIds.push(warrior.id);
         job.probCardId = warrior.id;
       } else if (recipe.consumeA) {
-        // consumeA=true, consumeB=false: A 삭제됐으니 B가 소요시간 표시
-        cardB.crafting = true; cardB.craftEndAt = endAt; cardB.craftStartAt = now;
-        job.timerCardIds.push(cardB.id);
+        // consumeA=true, consumeB=false: B가 worker (count>1이면 1장만 분리)
+        let worker = cardB;
+        if (cardB.count > 1) {
+          const split = cardB.split(1);
+          split.ratioX = cardB.ratioX + 0.03;
+          split.ratioY = cardB.ratioY + 0.03;
+          this.state.cards.push(split);
+          job.workerReturnId = cardB.id;
+          worker = split;
+        }
+        worker.crafting = true; worker.craftEndAt = endAt; worker.craftStartAt = now;
+        job.timerCardIds.push(worker.id);
+        job.workerId = worker.id;
       } else {
         // consumeA=false, consumeB=false (FARMLAND+PERSON):
         // PERSON을 낱개로 분리해 작업 중 잠금, 완료 후 원본 뭉치로 복귀
@@ -235,6 +265,7 @@ export class GameScene extends Phaser.Scene {
       });
       this.events.on('net:scoutReport', (d) => {
         this._scoutMgr.onReport(d);
+        this._hud.updateScoutReport(d);
       });
       this.events.on('net:gameOver', (d) => {
         const myRole = this.state.role || 'p1';
@@ -339,6 +370,10 @@ export class GameScene extends Phaser.Scene {
     const done = this.state.craftJobs.filter(j => now >= j.endAt);
     if (!done.length) return;
 
+    // 이번 틱에 완료되는 모든 결과 카드 ID를 미리 수집
+    // → 같은 틱에 완료된 결과 카드끼리 서로 병합되는 것을 방지
+    const batchResultIds = new Set(done.flatMap(j => j.resultCardIds));
+
     for (const job of done) {
       // 비소모 worker 카드: 잠금 해제
       for (const id of job.timerCardIds) {
@@ -346,10 +381,13 @@ export class GameScene extends Phaser.Scene {
         if (c) { c.crafting = false; c.craftEndAt = null; c.craftStartAt = null; }
       }
       // 미리 생성된 결과 카드: 기존 스택과 병합 가능하면 병합, 아니면 잠금 해제
+      // 단, 같은 배치(동일 틱)에서 방금 생성된 결과 카드와는 병합하지 않는다
       for (const id of job.resultCardIds) {
         const c = this.state.cards.find(x => x.id === id);
         if (!c) continue;
-        const existing = this.state.cards.find(x => x.type === c.type && x.id !== id && !x.crafting);
+        const existing = this.state.cards.find(x =>
+          x.type === c.type && x.id !== id && !x.crafting && !batchResultIds.has(x.id)
+        );
         if (existing) {
           existing.count += c.count;
           this.state.cards = this.state.cards.filter(x => x.id !== id);
@@ -543,11 +581,11 @@ export class GameScene extends Phaser.Scene {
   _showFeedback(msg, rx, ry, success) {
     const W = this.scale.width, H = this.scale.height;
     const x = rx * W, y = ry * (H - 90) - 50;
-    const color = success ? '#d4af37' : '#c84040';
+    const color = success ? '#c8960a' : '#a01808';
     const txt = this.add.text(x, y, msg, {
       fontSize: '15px', color,
       fontStyle: 'bold',
-      backgroundColor: '#1a0d05cc',
+      backgroundColor: '#0c0703cc',
       padding: { x: 8, y: 4 },
     }).setOrigin(0.5).setDepth(200);
     this.tweens.add({
@@ -558,14 +596,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   _makeBtn(x, y, label, cb) {
-    this.add.rectangle(x + 2, y + 2, 112, 36, 0x0a0603).setDepth(10);
-    const bg = this.add.rectangle(x, y, 112, 36, 0x3d2e1a)
+    this.add.rectangle(x + 2, y + 2, 112, 36, 0x000000, 0.78).setDepth(10);
+    const bg = this.add.rectangle(x, y, 112, 36, 0x140a04)
       .setInteractive({ useHandCursor: true })
-      .setDepth(10).setStrokeStyle(2, 0x6b4a2a);
-    const txt = this.add.text(x, y, label, { fontSize: '13px', color: '#c8a870' })
-      .setOrigin(0.5).setDepth(11);
+      .setDepth(10).setStrokeStyle(2, 0x8a5a28);
+    const txt = this.add.text(x, y, label, {
+      fontSize: '13px', color: '#c4a060', fontFamily: 'Georgia, serif',
+    }).setOrigin(0.5).setDepth(11);
     bg.on('pointerover', () => { bg.setFillStyle(0x5a3e20); bg.setStrokeStyle(2, 0xb87333); txt.setColor('#e8c88a'); SoundManager.get().sfxHover(); });
-    bg.on('pointerout',  () => { bg.setFillStyle(0x3d2e1a); bg.setStrokeStyle(2, 0x6b4a2a); txt.setColor('#c8a870'); });
+    bg.on('pointerout',  () => { bg.setFillStyle(0x140a04); bg.setStrokeStyle(2, 0x8a5a28); txt.setColor('#c4a060'); });
     bg.on('pointerdown', () => { SoundManager.get().sfxClick(); cb(); });
   }
 }

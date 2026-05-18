@@ -4,32 +4,32 @@ import { StackBadge } from './StackBadge.js';
 export const CARD_W = 90;
 export const CARD_H = 120;
 
+// 원시 부족 팔레트 — 가독성 유지하면서 어두운 흙빛으로
 const CAT_COLOR = {
-  human:    0xe8d5a8,
-  nature:   0xbacf8a,
-  threat:   0xc45040,
-  resource: 0xd8c07a,
-  weapon:   0xb09858,
-  building: 0xc8a848,
-  enemy:    0xa02020,
+  human:    0xc8a870,  // 무두질한 가죽
+  nature:   0x5a7a30,  // 짙은 이끼
+  threat:   0x7a2010,  // 녹슨 피
+  resource: 0xb89040,  // 황토 점토
+  weapon:   0x6a5030,  // 어두운 부싯돌
+  building: 0x7a5020,  // 점토 벽돌
+  enemy:    0x6a0c0c,  // 짙은 진홍
 };
 
 const CAT_BORDER = {
-  human:    0x8b6530,
-  nature:   0x5a7030,
-  threat:   0x8b2010,
-  resource: 0x8b6814,
-  weapon:   0x7a5a18,
-  building: 0x8b6800,
-  enemy:    0x7a0000,
+  human:    0x8a5828,
+  nature:   0x344818,
+  threat:   0x501008,
+  resource: 0x7a5018,
+  weapon:   0x483018,
+  building: 0x503010,
+  enemy:    0x440808,
 };
 
-// 원형 아크 설정
 const ARC_CX    = 0;
 const ARC_CY    = -5;
 const ARC_R     = 26;
 const ARC_STEPS = 48;
-const ARC_START = -Math.PI / 2;   // 12시 방향
+const ARC_START = -Math.PI / 2;
 
 export class CardSprite extends Phaser.GameObjects.Container {
   constructor(scene, stack) {
@@ -41,36 +41,71 @@ export class CardSprite extends Phaser.GameObjects.Container {
 
   _build() {
     const meta   = CARD_META[this.stack.type] || { label: '?', icon: '❓', category: 'resource' };
-    const bgCol  = CAT_COLOR[meta.category]   || 0xd8c07a;
-    const borCol = CAT_BORDER[meta.category]  || 0x8b6814;
+    const bgCol  = CAT_COLOR[meta.category]   || 0xb89040;
+    const borCol = CAT_BORDER[meta.category]  || 0x7a5018;
 
-    // 카드 그림자
-    this.add(this.scene.add.rectangle(3, 4, CARD_W, CARD_H, 0x0a0603, 0.6));
+    // 드라마틱한 그림자
+    this.add(this.scene.add.rectangle(4, 6, CARD_W, CARD_H, 0x000000, 0.78));
 
     // 카드 본체
     this._bg = this.scene.add.rectangle(0, 0, CARD_W, CARD_H, bgCol)
       .setStrokeStyle(2, borCol);
     this.add(this._bg);
 
-    // 상단 헤더 띠
-    this.add(this.scene.add.rectangle(0, -CARD_H / 2 + 15, CARD_W, 30, 0x000000, 0.18));
+    // 양피지/가죽 결 텍스처 (수평선)
+    const grainGfx = this.scene.add.graphics();
+    grainGfx.lineStyle(1, 0x000000, 0.07);
+    for (let gy = -CARD_H / 2 + 38; gy < CARD_H / 2 - 14; gy += 11) {
+      grainGfx.lineBetween(-CARD_W / 2 + 7, gy, CARD_W / 2 - 7, gy);
+    }
+    this.add(grainGfx);
 
-    // 안쪽 장식 테두리
-    const inner = this.scene.add.rectangle(0, 0, CARD_W - 8, CARD_H - 8, 0xffffff, 0);
-    inner.setStrokeStyle(1, borCol, 0.3);
-    this.add(inner);
+    // 상단 헤더 띠 (그을린 느낌)
+    this.add(this.scene.add.rectangle(0, -CARD_H / 2 + 15, CARD_W, 30, 0x000000, 0.28));
 
-    // SVG 아이콘
+    // 헤더 부족 대시 패턴
+    const headerGfx = this.scene.add.graphics();
+    headerGfx.fillStyle(borCol, 0.22);
+    for (let hx = -CARD_W / 2 + 8; hx < CARD_W / 2 - 6; hx += 10) {
+      headerGfx.fillRect(hx, -CARD_H / 2 + 5, 6, 2);
+    }
+    this.add(headerGfx);
+
+    // 안쪽 테두리 (부족 느낌)
+    const innerGfx = this.scene.add.graphics();
+    innerGfx.lineStyle(1, borCol, 0.4);
+    innerGfx.strokeRect(-CARD_W / 2 + 5, -CARD_H / 2 + 5, CARD_W - 10, CARD_H - 10);
+    this.add(innerGfx);
+
+    // 부족 모서리 L-표식
+    const cornerGfx = this.scene.add.graphics();
+    cornerGfx.fillStyle(borCol, 0.65);
+    const L = 9, t = 2;
+    // 좌상
+    cornerGfx.fillRect(-CARD_W/2 + 5, -CARD_H/2 + 5, L, t);
+    cornerGfx.fillRect(-CARD_W/2 + 5, -CARD_H/2 + 5, t, L);
+    // 우상
+    cornerGfx.fillRect(CARD_W/2 - 5 - L, -CARD_H/2 + 5, L, t);
+    cornerGfx.fillRect(CARD_W/2 - 5 - t, -CARD_H/2 + 5, t, L);
+    // 좌하
+    cornerGfx.fillRect(-CARD_W/2 + 5, CARD_H/2 - 5 - t, L, t);
+    cornerGfx.fillRect(-CARD_W/2 + 5, CARD_H/2 - 5 - L, t, L);
+    // 우하
+    cornerGfx.fillRect(CARD_W/2 - 5 - L, CARD_H/2 - 5 - t, L, t);
+    cornerGfx.fillRect(CARD_W/2 - 5 - t, CARD_H/2 - 5 - L, t, L);
+    this.add(cornerGfx);
+
+    // SVG 아이콘 (없으면 텍스트 이모지 폴백)
     const iconKey = `icon_${this.stack.type.toLowerCase()}`;
     if (this.scene.textures.exists(iconKey)) {
       this.add(this.scene.add.image(0, -16, iconKey).setDisplaySize(44, 44));
     } else {
-      this.add(this.scene.add.text(0, -20, meta.icon, { fontSize: '28px' }).setOrigin(0.5));
+      this.add(this.scene.add.text(0, -20, meta.icon, { fontSize: '30px' }).setOrigin(0.5));
     }
 
-    // 카드 이름
-    this.add(this.scene.add.text(0, 24, meta.label, {
-      fontSize: '12px', color: '#2a1400', fontStyle: 'bold',
+    // 이름
+    this.add(this.scene.add.text(0, 26, meta.label, {
+      fontSize: '11px', color: '#2a1008', fontStyle: 'bold',
       fontFamily: 'Georgia, serif',
     }).setOrigin(0.5));
 
@@ -78,32 +113,30 @@ export class CardSprite extends Phaser.GameObjects.Container {
     this._badge = new StackBadge(this.scene, -CARD_W / 2 + 14, -CARD_H / 2 + 14);
     this.add(this._badge);
 
-    // 타이머 (위협/교전)
+    // 타이머
     this._timer = this.scene.add.text(0, CARD_H / 2 - 14, '',
-      { fontSize: '11px', color: '#cc2200', fontStyle: 'bold' }).setOrigin(0.5);
+      { fontSize: '11px', color: '#c01808', fontStyle: 'bold' }).setOrigin(0.5);
     this.add(this._timer);
 
-    // 교전 중 표시
+    // 교전중 표시
     this._busyTxt = this.scene.add.text(0, 2, '',
-      { fontSize: '10px', color: '#c84040', backgroundColor: '#1a0d05cc', padding: { x: 3, y: 1 } })
+      { fontSize: '10px', color: '#c04030', backgroundColor: '#0c0603cc', padding: { x: 3, y: 1 } })
       .setOrigin(0.5);
     this.add(this._busyTxt);
 
-    // ── 제작 원형 아크 오버레이 ──────────────────────────────
+    // 제작 원형 아크
     this._craftGfx = this.scene.add.graphics();
     this.add(this._craftGfx);
 
-    // 제작 카운트다운 숫자
     this._craftNum = this.scene.add.text(ARC_CX, ARC_CY, '', {
-      fontSize: '20px', color: '#f5e6c8', fontStyle: 'bold',
-      stroke: '#0a0603', strokeThickness: 3,
+      fontSize: '20px', color: '#e8d4a0', fontStyle: 'bold',
+      stroke: '#070402', strokeThickness: 3,
     }).setOrigin(0.5).setVisible(false);
     this.add(this._craftNum);
 
-    // 제작 완료 체크 ("✓")
     this._craftDone = this.scene.add.text(ARC_CX, ARC_CY, '', {
-      fontSize: '22px', color: '#d4af37', fontStyle: 'bold',
-      stroke: '#0a0603', strokeThickness: 3,
+      fontSize: '22px', color: '#c8960a', fontStyle: 'bold',
+      stroke: '#070402', strokeThickness: 3,
     }).setOrigin(0.5).setVisible(false);
     this.add(this._craftDone);
 
@@ -114,64 +147,52 @@ export class CardSprite extends Phaser.GameObjects.Container {
     this._badge.setCount(this.stack.count);
 
     if (this.stack.crafting && this.stack.craftEndAt && this.stack.craftStartAt) {
-      // ── 제작 중: 원형 아크 카운트다운 ──────────────────────
       const total    = this.stack.craftEndAt - this.stack.craftStartAt;
       const elapsed  = timeNow - this.stack.craftStartAt;
       const progress = Math.min(1, Math.max(0, elapsed / total));
-      const remaining = 1 - progress;                         // 남은 비율
+      const remaining = 1 - progress;
       const secLeft  = Math.max(0, Math.ceil((this.stack.craftEndAt - timeNow) / 1000));
-
-      const endA = ARC_START + remaining * Math.PI * 2;
+      const endA     = ARC_START + remaining * Math.PI * 2;
 
       this._craftGfx.clear();
-
-      // 전체 카드 어둡게
-      this._craftGfx.fillStyle(0x000000, 0.60);
+      this._craftGfx.fillStyle(0x000000, 0.65);
       this._craftGfx.fillRect(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H);
 
-      // 원형 트랙 (전체 링, 어두운 돌색)
-      this._craftGfx.lineStyle(4, 0x2d1a08, 1);
+      this._craftGfx.lineStyle(4, 0x1e0e04, 1);
       this._craftGfx.beginPath();
       this._craftGfx.arc(ARC_CX, ARC_CY, ARC_R, 0, Math.PI * 2, false, ARC_STEPS);
       this._craftGfx.strokePath();
 
       if (remaining > 0.002) {
-        // 외곽 글로우 (amber, 낮은 투명도)
-        this._craftGfx.lineStyle(10, 0xe8a430, 0.18);
+        this._craftGfx.lineStyle(10, 0xc8960a, 0.15);
         this._craftGfx.beginPath();
         this._craftGfx.arc(ARC_CX, ARC_CY, ARC_R + 1, ARC_START, endA, false, ARC_STEPS);
         this._craftGfx.strokePath();
 
-        // 메인 아크 (amber, 시계 방향으로 줄어듦)
-        this._craftGfx.lineStyle(6, 0xe8a430, 1);
+        this._craftGfx.lineStyle(6, 0xc8960a, 1);
         this._craftGfx.beginPath();
         this._craftGfx.arc(ARC_CX, ARC_CY, ARC_R, ARC_START, endA, false, ARC_STEPS);
         this._craftGfx.strokePath();
 
-        // 12시 앵커 도트
-        this._craftGfx.fillStyle(0xd4af37, 1);
-        this._craftGfx.fillCircle(ARC_CX, ARC_CY - ARC_R, 5);
+        this._craftGfx.fillStyle(0xc8960a, 1);
+        this._craftGfx.fillCircle(ARC_CX, ARC_CY - ARC_R, 4);
 
-        // 이동 끝점 도트
         const tipX = ARC_CX + Math.cos(endA) * ARC_R;
         const tipY = ARC_CY + Math.sin(endA) * ARC_R;
-        this._craftGfx.fillStyle(0xffe066, 1);
+        this._craftGfx.fillStyle(0xe8d070, 1);
         this._craftGfx.fillCircle(tipX, tipY, 5);
       }
 
-      // 초 숫자
       this._craftNum.setText(String(secLeft)).setVisible(secLeft > 0);
       this._craftDone.setVisible(false);
-
       this._timer.setText('');
       this._busyTxt.setText('');
 
     } else if (this.stack.crafting) {
-      // 완료 직전 (crafting=true 이지만 시간 초과) → 잠깐 ✓ 표시
       this._craftGfx.clear();
-      this._craftGfx.fillStyle(0x000000, 0.50);
+      this._craftGfx.fillStyle(0x000000, 0.55);
       this._craftGfx.fillRect(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H);
-      this._craftGfx.lineStyle(4, 0xd4af37, 0.8);
+      this._craftGfx.lineStyle(4, 0xc8960a, 0.85);
       this._craftGfx.beginPath();
       this._craftGfx.arc(ARC_CX, ARC_CY, ARC_R, 0, Math.PI * 2, false, ARC_STEPS);
       this._craftGfx.strokePath();
@@ -179,17 +200,16 @@ export class CardSprite extends Phaser.GameObjects.Container {
       this._craftDone.setText('✓').setVisible(true);
 
     } else {
-      // ── 평상시 ────────────────────────────────────────────
       this._craftGfx.clear();
       this._craftNum.setVisible(false);
       this._craftDone.setVisible(false);
 
       if (this.stack.expiresAt) {
         const sec = Math.max(0, Math.ceil((this.stack.expiresAt - timeNow) / 1000));
-        this._timer.setText(`⏱${sec}s`).setColor(sec <= 5 ? '#ff0000' : '#cc2200');
+        this._timer.setText(`⏱${sec}s`).setColor(sec <= 5 ? '#ff2020' : '#c01808');
       } else if (this.stack.combatTimer > 0 && this.stack.engagedWith) {
         const sec = Math.max(0, Math.ceil(this.stack.combatTimer / 1000));
-        this._timer.setText(`⚔${sec}s`).setColor('#b87333');
+        this._timer.setText(`⚔${sec}s`).setColor('#a06030');
       } else {
         this._timer.setText('');
       }
@@ -200,21 +220,19 @@ export class CardSprite extends Phaser.GameObjects.Container {
 
   setHighlight(on) {
     const meta   = CARD_META[this.stack.type];
-    const borCol = CAT_BORDER[meta?.category] || 0x8b6814;
-    this._bg.setStrokeStyle(on ? 3 : 2, on ? 0xd4af37 : borCol);
+    const borCol = CAT_BORDER[meta?.category] || 0x7a5018;
+    this._bg.setStrokeStyle(on ? 3 : 2, on ? 0xc8960a : borCol);
   }
 
-  // 3초 홀드 후 병합 준비 상태 표시 (파란 테두리)
   setMergeHighlight(on) {
     const meta   = CARD_META[this.stack.type];
-    const borCol = CAT_BORDER[meta?.category] || 0x8b6814;
-    this._bg.setStrokeStyle(on ? 3 : 2, on ? 0x40a8ff : borCol);
+    const borCol = CAT_BORDER[meta?.category] || 0x7a5018;
+    this._bg.setStrokeStyle(on ? 3 : 2, on ? 0x4090d0 : borCol);
   }
 
   setDragging(on) {
     this.setDepth(on ? 100 : 0);
     this.setScale(on ? 1.08 : 1.0);
-    // crafting 상태면 refresh()가 alpha를 관리하므로 건드리지 않음
-    if (!this.stack.crafting) this.setAlpha(on ? 0.82 : 1.0);
+    if (!this.stack.crafting) this.setAlpha(on ? 0.85 : 1.0);
   }
 }

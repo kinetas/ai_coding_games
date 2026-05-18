@@ -54,7 +54,7 @@ const RECIPES = [
   // ── 건설 ──
   // 성벽은 방어 기본 단위(카드 1장 = 체력 1). 벽돌 생산(4.5초)이 병목이므로 조합 자체는 빠르게.
   { a: 'BRICK',    b: 'BRICK',    consumeA: true, consumeB: true,
-    result: [{ type: 'WALL',     count: 1 }], craftTime: 3000 },
+    result: [{ type: 'WALL',     count: 3 }], craftTime: 3000 },
   // 인구 제한 +1의 첫 번째 건물. 기준 투자 비용.
   { a: 'BRICK',    b: 'TREE',     consumeA: true, consumeB: true,
     result: [{ type: 'LOG_HOUSE', count: 1 }], craftTime: 5000 },
@@ -116,6 +116,13 @@ export class CombinationEngine {
       const farmLimit = this._calcFarmLimit(state.cards);
       const farmAdded = recipe.result.filter(r => r.type === 'FARMLAND').reduce((s, r) => s + r.count, 0);
       if (farmNow + farmAdded > farmLimit) return { error: `농지 제한 초과 (${farmNow}/${farmLimit})` };
+    }
+
+    if (recipe.result.some(r => r.type === 'BOAT')) {
+      const state     = this._getState();
+      const boatNow   = state.cards.filter(c => c.type === 'BOAT').reduce((s, c) => s + c.count, 0);
+      const boatLimit = this._calcBoatLimit(state.cards);
+      if (boatNow >= boatLimit) return { error: `배 제한 초과 (${boatNow}/${boatLimit})` };
     }
 
     return { recipe, craftTime: recipe.craftTime ?? 1000, ok: true };
@@ -198,6 +205,12 @@ export class CombinationEngine {
     const sum = (type, mult) =>
       cards.filter(c => c.type === type).reduce((s, c) => s + c.count, 0) * mult;
     return 1 + sum('VILLAGE', 1) + sum('CITY', 2);
+  }
+
+  _calcBoatLimit(cards) {
+    const sum = (type, mult) =>
+      cards.filter(c => c.type === type).reduce((s, c) => s + c.count, 0) * mult;
+    return Math.floor(sum('VILLAGE', 1) / 2) + sum('CITY', 1);
   }
 
   calcKingdomScore(cards) {
